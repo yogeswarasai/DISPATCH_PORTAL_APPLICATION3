@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.iocl.Dispatch_Portal_Application.DTO.ParcelOutDto;
+import com.iocl.Dispatch_Portal_Application.DTO.ParcelOutResponse;
 import com.iocl.Dispatch_Portal_Application.Entity.TrnParcelOut;
 import com.iocl.Dispatch_Portal_Application.Security.JwtUtils;
 import com.iocl.Dispatch_Portal_Application.ServiceLayer.TrnParcelOutService;
@@ -81,7 +82,12 @@ public class TrnParcelOutController {
 	    }
 
     
-  
+	    @GetMapping("/out/{consignmentNumber}")
+	    public ResponseEntity<ParcelOutResponse> getParcelOutByConsignmentNumber(@PathVariable String consignmentNumber) {
+
+	        return trnParcelOutService.getParcelOutByConsignmentNumber(consignmentNumber);
+
+	    }
 
 
 }

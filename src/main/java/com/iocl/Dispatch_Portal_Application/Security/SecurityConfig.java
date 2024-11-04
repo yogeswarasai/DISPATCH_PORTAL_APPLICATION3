@@ -2,6 +2,7 @@ package com.iocl.Dispatch_Portal_Application.Security;
 
 import java.net.http.HttpClient;
 
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,7 +30,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         return new AuthTokenFilter();
     }
 
-    
+    @Bean
+    public ModelMapper modelMapper() {
+        return new ModelMapper();
+    }
     @Bean
     public HttpClient httpClient() {
         return HttpClient.newHttpClient();

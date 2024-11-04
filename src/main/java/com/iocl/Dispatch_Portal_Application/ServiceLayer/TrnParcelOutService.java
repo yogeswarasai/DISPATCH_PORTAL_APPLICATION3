@@ -10,6 +10,8 @@ import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,6 +21,7 @@ import org.springframework.stereotype.Service;
 
 import com.iocl.Dispatch_Portal_Application.DTO.ParcelInDto;
 import com.iocl.Dispatch_Portal_Application.DTO.ParcelOutDto;
+import com.iocl.Dispatch_Portal_Application.DTO.ParcelOutResponse;
 import com.iocl.Dispatch_Portal_Application.Entity.MstEmployee;
 import com.iocl.Dispatch_Portal_Application.Entity.MstUser;
 import com.iocl.Dispatch_Portal_Application.Entity.TrnParcelIn;
@@ -54,7 +57,7 @@ public class TrnParcelOutService {
 	    @Autowired
 	    private MstLocationService mstLocationService;
 
-	    
+	    private static final Logger logger = LoggerFactory.getLogger(TrnParcelOutService.class);
 	    
 	    public List<TrnParcelOut> findAll() {
 	        return trnParcelOutRepository.findAll();
@@ -448,8 +451,7 @@ public class TrnParcelOutService {
 	            dto.setLastUpdatedDate(parcel.getLastUpdatedDate());
 
 	         
-	        
-	            
+	     
 	    
 	            return dto;
 	        });
@@ -514,5 +516,75 @@ public class TrnParcelOutService {
 //	                nameParts.length > 2 ? nameParts[2] : "",
 //	                nameParts.length > 3 ? nameParts[3] : "");
 //	    }
+		 
+		 public ResponseEntity<ParcelOutResponse> getParcelOutByConsignmentNumber(String consignmentNumber) {
+
+		        logger.info("Retrieving parcel out details for consignment number: {}", consignmentNumber);
+
+
+
+		        try {
+
+		            Optional<TrnParcelOut> parcelOutOpt = trnParcelOutRepository.findByConsignmentNumber(consignmentNumber);
+
+
+
+		            if (parcelOutOpt.isEmpty()) {
+
+		                logger.warn("No parcel found for consignment number: {}", consignmentNumber);
+
+		                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+
+		            }
+
+
+
+		            TrnParcelOut parcelOut = parcelOutOpt.get();
+
+		            ParcelOutResponse response = new ParcelOutResponse();
+		            
+		            String senderLocCode=parcelOut.getSenderLocCode();
+		            if (senderLocCode != null && !senderLocCode.trim().isEmpty()) {
+		                senderLocCode = senderLocCode.trim();
+		                String senderLocName = mstLocationService.getLocNameByCode(senderLocCode);
+		                response.setSenderLocCode(senderLocName != null && !senderLocName.trim().isEmpty()
+		                    ? senderLocName + " (" + senderLocCode + ")"
+		                  //  : "Unknown Location (" + senderLocCode + ")"
+		                    		 :senderLocCode
+		                		);
+		            } else {
+		            	response.setSenderLocCode("Unknown Location");
+		            }
+
+//		            response.setSenderLocCode(parcelOut.getSenderLocCode());
+
+		            response.setConsignmentDate(parcelOut.getConsignmentDate());
+
+
+		            response.setSenderDepartment(parcelOut.getSenderDepartment());
+		            response.setSenderName(parcelOut.getSenderName());
+		            response.setRecipientDepartment(parcelOut.getRecipientDepartment());
+
+		            response.setRecipientName(parcelOut.getRecipientName());
+
+		            response.setCourierName(parcelOut.getCourierName());
+
+
+
+		            logger.info("Parcel out details retrieved successfully for consignment number: {}", consignmentNumber);
+
+		            return ResponseEntity.ok(response);
+
+
+
+		        } catch (Exception e) {
+
+		            logger.error("Error occurred while retrieving parcel out details for consignment number: {}", consignmentNumber, e);
+
+		            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+
+		        }
+
+		    }
 	}
 

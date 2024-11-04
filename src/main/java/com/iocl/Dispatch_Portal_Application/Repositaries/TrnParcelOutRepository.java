@@ -2,6 +2,7 @@ package com.iocl.Dispatch_Portal_Application.Repositaries;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -72,6 +73,8 @@ public interface TrnParcelOutRepository extends JpaRepository<TrnParcelOut, TrnP
         Page<TrnParcelOut> findBySenderLocCodeAndSenderNameOrderByOutTrackingIdDesc(String locCode, String name, Pageable pageable);
 
 	    Page<TrnParcelOut> findBySenderLocCodeAndSenderNameAndCreatedDateOrderByOutTrackingId(String locCode, String name, LocalDate sentDate, Pageable pageable);
+
+		Optional<TrnParcelOut> findByConsignmentNumber(String consignmentNumber);
 
 //	    @Query("SELECT t FROM TrnParcelOut t WHERE " +
 //		           "LOWER(t.senderName) LIKE LOWER(CONCAT('%', :namePart1, '%')) OR " +

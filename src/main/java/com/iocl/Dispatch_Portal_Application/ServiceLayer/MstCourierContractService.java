@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.transaction.Transactional;
@@ -40,15 +41,19 @@ public class MstCourierContractService {
 	private MstCourierContractDiscountRepository mstCourierContractDiscountRepository;
 	 private MstCourierContractRateRepository mstCourierContractRateRepository;
      private JwtUtils jwtUtils;
+     private final ModelMapper modelMapper;
+
 
 	public MstCourierContractService(MstCourierContractRepository mstCourierContractRepository,
 			MstCourierContractDiscountRepository mstCourierContractDiscountRepository,
-			MstCourierContractRateRepository mstCourierContractRateRepository, JwtUtils jwtUtils) {
-
+			MstCourierContractRateRepository mstCourierContractRateRepository, JwtUtils jwtUtils,
+			ModelMapper modelMapper) {
+		super();
 		this.mstCourierContractRepository = mstCourierContractRepository;
 		this.mstCourierContractDiscountRepository = mstCourierContractDiscountRepository;
 		this.mstCourierContractRateRepository = mstCourierContractRateRepository;
 		this.jwtUtils = jwtUtils;
+		this.modelMapper = modelMapper;
 	}
 
 
@@ -148,7 +153,7 @@ public class MstCourierContractService {
 	    
 	    String token = jwtUtils.getJwtFromCookies(httpRequest);
         String locCode = jwtUtils.getLocCodeFromJwtToken(token);
-          String     userid =jwtUtils.getUserIdFromJwtToken(token);
+          String  userid =jwtUtils.getUserNameFromJwtToken(token);
 
 	    try {
 	        MstCourierContractPK contractPK = new MstCourierContractPK();
@@ -373,5 +378,51 @@ public class MstCourierContractService {
 	    return contractHistoryResponses;
 	}
 
-	
+
+
+	    
+	    public List<MstCourierContracHistoryResponse> getContractBasedOnLocCodeCourierContNo(String courierContNo, HttpServletRequest request) {
+	        String token = jwtUtils.getJwtFromCookies(request);
+	        String locCode = jwtUtils.getLocCodeFromJwtToken(token);
+
+	        Optional<MstCourierContract> contracts = mstCourierContractRepository.findByLocCodeAndCourierContNo(locCode, courierContNo);
+
+	        return contracts.stream().map(contract -> {
+	            MstCourierContracHistoryResponse response = modelMapper.map(contract, MstCourierContracHistoryResponse.class);
+
+	            // Ensure all fields are mapped
+	            response.setCourierContNo(contract.getCourierContNo());
+	            response.setStatus(contract.getStatus());
+	            response.setCreatedBy(contract.getCreatedBy());
+	            response.setCourierCode(contract.getCourierCode());
+	            response.setContractStartDate(contract.getContractStartDate());
+	            response.setContractEndDate(contract.getContractEndDate());
+	            response.setCreatedDate(contract.getCreatedDate());
+	            response.setLastUpdatedDate(contract.getLastUpdatedDate());
+
+	            // Populate discounts
+	            List<MstCourierContractDiscountDTO> discounts = mstCourierContractDiscountRepository.findByLocCodeAndCourierContNo(locCode, courierContNo)
+	                    .stream()
+	                    .map(this::convertToDiscountDTO)
+	                    .collect(Collectors.toList());
+	            response.setDiscounts(discounts);
+
+	            // Populate rates
+	            List<MstCourierContractRateDto> rates = mstCourierContractRateRepository.findByLocCodeAndCourierContNo(locCode, courierContNo)
+	                    .stream()
+	                    .map(this::convertToRateDTO)
+	                    .collect(Collectors.toList());
+	            response.setRates(rates);
+
+	            return response;
+	        }).collect(Collectors.toList());
+	    }
+
+	    private MstCourierContractDiscountDTO convertToDiscountDTO(MstCourierContractDiscount discount) {
+	        return modelMapper.map(discount, MstCourierContractDiscountDTO.class);
+	    }
+
+	    private MstCourierContractRateDto convertToRateDTO(MstCourierContractRate rate) {
+	        return modelMapper.map(rate, MstCourierContractRateDto.class);
+	    }
 }

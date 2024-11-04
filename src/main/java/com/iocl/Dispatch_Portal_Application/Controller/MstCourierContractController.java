@@ -51,6 +51,7 @@ public class MstCourierContractController {
 		  
 	  }
 	   
+	   
 	   @GetMapping("/history")
 	    public ResponseEntity<List<MstCourierContracHistoryResponse>> getAllContractsBasedOnLocCodeAndStatus(HttpServletRequest request) {
 	        // Call the service to get contracts
@@ -64,6 +65,12 @@ public class MstCourierContractController {
 	       return ResponseEntity.ok(contracts);
 	   }
 
+	   @GetMapping("/{courierContNo}")
+	   public ResponseEntity<List<MstCourierContracHistoryResponse>> getContractBasedOnLocCodeCourierContNo(@PathVariable String courierContNo, HttpServletRequest request) {
+	       // Call the service to get active contracts
+	       List<MstCourierContracHistoryResponse> contracts = mstCourierContractService.getContractBasedOnLocCodeCourierContNo(courierContNo,request);
+	       return ResponseEntity.ok(contracts);
+	   }
 	}
  
 	
