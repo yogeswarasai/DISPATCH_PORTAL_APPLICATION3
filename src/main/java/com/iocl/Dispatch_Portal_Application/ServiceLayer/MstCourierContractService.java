@@ -89,8 +89,8 @@ public class MstCourierContractService {
                 newContract.setCreatedDate(LocalDate.now());
                 newContract.setLastUpdatedDate(null);
                 mstCourierContractRepository.save(newContract);
-              if(request.getCourierDiscount()!=null)  {
-            	  for (MstCourierContractDiscountDTO discountDTO : request.getCourierDiscount()) {
+              if(request.getCourierDiscounts()!=null)  {
+            	  for (MstCourierContractDiscountDTO discountDTO : request.getCourierDiscounts()) {
 					
             		  
             		  MstCourierContractDiscount discount=new MstCourierContractDiscount();
@@ -149,8 +149,8 @@ public class MstCourierContractService {
 
 
 	public ResponseEntity<String> updateContract( String courierContNo, MstCourierContractDto request,HttpServletRequest httpRequest) {
-	    logger.debug("Updating MstCourierContract Details: " + request);
-	    
+	    logger.info("Updating MstCourierContract Details: " + request);
+	    logger.info("Updating MstCourierContract Details: " + request.getCourierDiscounts());
 	    String token = jwtUtils.getJwtFromCookies(httpRequest);
         String locCode = jwtUtils.getLocCodeFromJwtToken(token);
           String  userid =jwtUtils.getUserNameFromJwtToken(token);
@@ -174,15 +174,16 @@ public class MstCourierContractService {
 
 	            // Save the contract (without modifying the primary key)
 	            mstCourierContractRepository.save(contract);
-
+	            logger.info(" BEFORE IF CONDITION");
+	            
 	            // Update discount and rates logic (as before)
-	            if (request.getCourierDiscount() != null) {
-	            //   List<MstCourierContractDiscountDTO> discountDTO = request.getCourierDiscount();
-
+	            if (request.getCourierDiscounts() != null) {
+	           
+	            	  logger.info(" AFTER IF CONDITION");
 	                
 	                List<MstCourierContractDiscount> existingDiscount = 
 	                    mstCourierContractDiscountRepository.findByLocCodeAndCourierContNo(locCode.trim(),courierContNo.trim());
-	                logger.info("recieved existing discount  {}"+existingDiscount.toString());
+//	                logger.info("recieved existing discount  {}"+existingDiscount.toString());
 
 
 	                if (!existingDiscount.isEmpty()) {
@@ -192,7 +193,7 @@ public class MstCourierContractService {
 	                    mstCourierContractDiscountRepository.deleteAll(existingDiscount);
 	                }
 	                
-	                for (MstCourierContractDiscountDTO discountDTO : request.getCourierDiscount()) {
+	                for (MstCourierContractDiscountDTO discountDTO : request.getCourierDiscounts()) {
 	                	MstCourierContractDiscount newDiscount = new MstCourierContractDiscount();
 
 	                    newDiscount.setLocCode(locCode.trim());
@@ -211,8 +212,9 @@ public class MstCourierContractService {
 	                }
 	               
 	            
-	            
+	            logger.info(" BEFORE IF CONDITION OF RATES");
 	            if (request.getCourierRates() != null) {
+	            	 logger.info(" AFTER IF CONDITION OF RATES");
 	                // Delete all the existing rates for the given locCode and courierContNo ONCE
 	                List<MstCourierContractRate> existingRates = 
 	                    mstCourierContractRateRepository.findByLocCodeAndCourierContNo(locCode.trim(), courierContNo.trim());

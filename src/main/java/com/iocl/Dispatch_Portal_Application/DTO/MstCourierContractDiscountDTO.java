@@ -5,7 +5,6 @@ public class MstCourierContractDiscountDTO{
     private Double fromMonthlyAmt;
     private Double toMonthlyAmt;
     private Double discountPercentage;
-	
 	public Double getFromMonthlyAmt() {
 		return fromMonthlyAmt;
 	}
@@ -24,6 +23,9 @@ public class MstCourierContractDiscountDTO{
 	public void setDiscountPercentage(Double discountPercentage) {
 		this.discountPercentage = discountPercentage;
 	}
+	
+	
+
     
     
 }
