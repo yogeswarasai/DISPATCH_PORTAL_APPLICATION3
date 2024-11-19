@@ -35,6 +35,18 @@ public class MstCourierContractDiscountId implements Serializable {
 	}
 	
 	
+	 // Default constructor
+    public MstCourierContractDiscountId() {}
+
+    // Constructor with all fields
+    public MstCourierContractDiscountId(String locCode, String courierContNo, 
+                                        Double fromMonthlyAmt, Double toMonthlyAmt) {
+        this.locCode = locCode;
+        this.courierContNo = courierContNo;
+        this.fromMonthlyAmt = fromMonthlyAmt;
+        this.toMonthlyAmt = toMonthlyAmt;
+    }
+	
     
     
 }

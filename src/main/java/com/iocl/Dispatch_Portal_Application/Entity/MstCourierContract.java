@@ -15,11 +15,12 @@ import javax.persistence.Table;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.iocl.Dispatch_Portal_Application.composite_pk.CourierContractId;
 import com.iocl.Dispatch_Portal_Application.composite_pk.MstCourierContractPK;
 
 @Entity
 @Table(name = "mst_courier_contract")
-@IdClass(MstCourierContractPK.class)
+@IdClass(CourierContractId.class)
 public class MstCourierContract {
 
     @Id
@@ -51,15 +52,7 @@ public class MstCourierContract {
     @Column(name = "last_updated_date")
     private LocalDateTime lastUpdatedDate;
     
-    @OneToMany(mappedBy = "courierContract",cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference // Mark as the parent reference
-    private List<MstCourierContractDiscount> discounts;
-
-    @OneToMany(mappedBy = "courierContract",cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference // Mark as the parent reference
-    private List<MstCourierContractRate> rates;
-
-
+   
 	public String getLocCode() {
 		return locCode;
 	}
@@ -132,21 +125,6 @@ public class MstCourierContract {
 		this.lastUpdatedDate = lastUpdatedDate;
 	}
 
-	public List<MstCourierContractDiscount> getDiscounts() {
-		return discounts;
-	}
-
-	public void setDiscounts(List<MstCourierContractDiscount> discounts) {
-		this.discounts = discounts;
-	}
-
-	public List<MstCourierContractRate> getRates() {
-		return rates;
-	}
-
-	public void setRates(List<MstCourierContractRate> rates) {
-		this.rates = rates;
-	}
 
     
 }

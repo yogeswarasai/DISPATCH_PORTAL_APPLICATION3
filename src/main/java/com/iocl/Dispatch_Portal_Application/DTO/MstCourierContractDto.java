@@ -4,42 +4,22 @@ import java.time.LocalDate;
 import java.util.List;
 
 public class MstCourierContractDto {
-   private String courierCode;
    private String courierContNo;
-   private LocalDate contractStartDate;
-   private LocalDate contractEndDate;
-   private List<MstCourierContractDiscountDTO> courierDiscounts;
+
    private List<MstCourierContractRateDto> courierRates;
-public String getCourierCode() {
-	return courierCode;
-}
-public void setCourierCode(String courierCode) {
-	this.courierCode = courierCode;
-}
+   private List<MstCourierContractDiscountDTO> courierDiscounts;
+
+
 public String getCourierContNo() {
 	return courierContNo;
 }
 public void setCourierContNo(String courierContNo) {
 	this.courierContNo = courierContNo;
 }
-public LocalDate getContractStartDate() {
-	return contractStartDate;
+
+public void setCourierDiscount(List<MstCourierContractDiscountDTO> courierDiscount) {
+	this.courierDiscounts = courierDiscount;
 }
-public void setContractStartDate(LocalDate contractStartDate) {
-	this.contractStartDate = contractStartDate;
-}
-public LocalDate getContractEndDate() {
-	return contractEndDate;
-}
-public void setContractEndDate(LocalDate contractEndDate) {
-	this.contractEndDate = contractEndDate;
-}
-//public List<MstCourierContractDiscountDTO> getCourierDiscount() {
-//	return courierDiscounts;
-//}
-//public void setCourierDiscount(List<MstCourierContractDiscountDTO> courierDiscount) {
-//	this.courierDiscounts = courierDiscount;
-//}
 public List<MstCourierContractRateDto> getCourierRates() {
 	return courierRates;
 }

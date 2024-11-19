@@ -2,10 +2,8 @@ package com.iocl.Dispatch_Portal_Application.ServiceLayer;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.transaction.Transactional;
@@ -13,12 +11,11 @@ import javax.transaction.Transactional;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import com.iocl.Dispatch_Portal_Application.DTO.MstCourierContracHistoryResponse;
+import com.iocl.Dispatch_Portal_Application.DTO.CourierContractDto;
 import com.iocl.Dispatch_Portal_Application.DTO.MstCourierContractDiscountDTO;
 import com.iocl.Dispatch_Portal_Application.DTO.MstCourierContractDto;
 import com.iocl.Dispatch_Portal_Application.DTO.MstCourierContractRateDto;
@@ -29,8 +26,11 @@ import com.iocl.Dispatch_Portal_Application.Repositaries.MstCourierContractDisco
 import com.iocl.Dispatch_Portal_Application.Repositaries.MstCourierContractRateRepository;
 import com.iocl.Dispatch_Portal_Application.Repositaries.MstCourierContractRepository;
 import com.iocl.Dispatch_Portal_Application.Security.JwtUtils;
+import com.iocl.Dispatch_Portal_Application.composite_pk.CourierContractId;
 import com.iocl.Dispatch_Portal_Application.composite_pk.MstCourierContractDiscountId;
 import com.iocl.Dispatch_Portal_Application.composite_pk.MstCourierContractPK;
+import com.iocl.Dispatch_Portal_Application.composite_pk.MstCourierContractRateId;
+import com.iocl.Dispatch_Portal_Application.modal.StatusCodeModal;
 
 @Service
 public class MstCourierContractService {
@@ -56,375 +56,375 @@ public class MstCourierContractService {
 		this.modelMapper = modelMapper;
 	}
 
+	 public ResponseEntity<?> createCourierContract(CourierContractDto courierContractDto, HttpServletRequest request) {
+	        MstCourierContract courierContract = courierContractDto.toMstCourierContract();
+	        String token = jwtUtils.getJwtFromCookies(request);
+	        String username=jwtUtils.getUserNameFromJwtToken(token);
 
-	public ResponseEntity<String> createContract(MstCourierContractDto request, HttpServletRequest httpRequest) {
-		logger.debug("Received MstCourierContract Details:" +request);
-		
-		    String token = jwtUtils.getJwtFromCookies(httpRequest);
+	        // Extract locCode from token
 	        String locCode = jwtUtils.getLocCodeFromJwtToken(token);
-	        String username = jwtUtils.getUserNameFromJwtToken(token);		
-		//String locCode="4400";
-		String courierContNo=request.getCourierContNo();
-		try {
-            MstCourierContractPK contractPK = new MstCourierContractPK();
-            contractPK.setLocCode(locCode);
-            contractPK.setCourierContNo(courierContNo);
+	        if (locCode == null) {
+	            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid JWT token");
+	        }
+	        courierContract.setLocCode(locCode.trim());  // Setting locCode from token
+	        courierContract.setStatus("A");
+	        courierContract.setCreatedBy(username);
+	        courierContract.setCreatedDate(LocalDate.now());
+	       
+	                    String courierContNo=courierContractDto.getCourierContNo();
+	        // Create a composite key CourierContractId
+	       CourierContractId contractId = new CourierContractId(locCode, courierContract.getCourierContNo());
+	         Optional<MstCourierContract> contract=mstCourierContractRepository.findById(contractId);
+	        if (contract.isPresent()) {
+	            StatusCodeModal statusCodeModal = new StatusCodeModal();
+	            statusCodeModal.setStatus_code(HttpStatus.BAD_REQUEST.value());
+	            statusCodeModal.setStatus("Courier contract already exists");
+	            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(statusCodeModal);
+	        }
+	        MstCourierContract createdContract = mstCourierContractRepository.save(courierContract);
+	        StatusCodeModal statusCodeModal = new StatusCodeModal();
+	        statusCodeModal.setStatus_code(HttpStatus.CREATED.value());
+	        statusCodeModal.setStatus("Courier contract created successfully.");
+	        return ResponseEntity.status(HttpStatus.CREATED).body(statusCodeModal);
+	    }
 
-            // Check if the contract already exists
-            Optional<MstCourierContract> existingContract = mstCourierContractRepository.findById(contractPK);
-            if (existingContract.isPresent()) {
-                logger.info("Courier contract with locCode {} and courierContNo {} already exists", 
-                		locCode, courierContNo);
-                return ResponseEntity.status(HttpStatus.ALREADY_REPORTED).body("Contract already exists.");
-            } else {
-                // Process new contract logic
-                MstCourierContract newContract = new MstCourierContract();
-                newContract.setLocCode(locCode);
-                newContract.setCourierContNo(courierContNo);
-                newContract.setContractStartDate(request.getContractStartDate());
-                newContract.setContractEndDate(request.getContractEndDate());
-                newContract.setCourierCode(request.getCourierCode());
-                newContract.setStatus("A"); 
-                newContract.setCreatedBy(username);
-                newContract.setCreatedDate(LocalDate.now());
-                newContract.setLastUpdatedDate(null);
-                mstCourierContractRepository.save(newContract);
-              if(request.getCourierDiscounts()!=null)  {
-            	  for (MstCourierContractDiscountDTO discountDTO : request.getCourierDiscounts()) {
-					
-            		  
-            		  MstCourierContractDiscount discount=new MstCourierContractDiscount();
-                      discount.setLocCode(locCode);
-                      discount.setCourierContNo(courierContNo);
-                      discount.setToMonthlyAmt(discountDTO.getToMonthlyAmt());
-                      discount.setFromMonthlyAmt(discountDTO.getFromMonthlyAmt());
-                      discount.setDiscountPercentage(discountDTO.getDiscountPercentage());
-                      discount.setStatus("A");
-                      discount.setCreatedBy(username);
-                      discount.setCreatedDate(LocalDate.now());
-                      
-                      mstCourierContractDiscountRepository.save(discount);
-				}
-              
-              }
-              else{
-            	  return ResponseEntity.status(HttpStatus.NOT_FOUND).body("discount object is not there");
-              }
-              
-              if(request.getCourierRates() != null) {
-            	    for (MstCourierContractRateDto ratesDto : request.getCourierRates()) {
-            	        logger.debug("Received rate DTO: {}", ratesDto); // Log DTO values
+	    public ResponseEntity<StatusCodeModal> updateCourierContract(String courierContNo, MstCourierContract mstCourierContract, HttpServletRequest request) {
+	        String token = jwtUtils.getJwtFromCookies(request);
+	        String locCode = jwtUtils.getLocCodeFromJwtToken(token);
+	        String username=jwtUtils.getUserNameFromJwtToken(token);
 
-            	        MstCourierContractRate courierRate = new MstCourierContractRate();
-            	        courierRate.setLocCode(locCode);
-            	        courierRate.setCourierContNo(courierContNo);
-            	        courierRate.setFromWtGms(ratesDto.getFromWtGms());
-            	        courierRate.setToWtGms(ratesDto.getToWtGms());
-            	        courierRate.setFromDistanceKm(ratesDto.getFromDistanceKm());
-            	        courierRate.setToDistanceKm(ratesDto.getToDistanceKm());
-            	        courierRate.setRate(ratesDto.getRate());
-            	        courierRate.setStatus("A");
-            	        courierRate.setCreatedBy(username);
-            	        courierRate.setCreatedDate(LocalDate.now());
+	        // Create composite key CourierContractId
+	        CourierContractId contractId = new CourierContractId(locCode, courierContNo);
 
-            	        logger.debug("Saving courier rate: {}", courierRate); // Log before saving
-            	        mstCourierContractRateRepository.save(courierRate);
-            	    }
-            	} else {
-            	    logger.error("Courier rates are null");
-            	    return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Rates object is not present.");
-            	}
+	        Optional<MstCourierContract> existingContract = mstCourierContractRepository.findById(contractId);
+	        StatusCodeModal statusCodeModal = new StatusCodeModal();
 
-           
-                logger.info("Courier contract with locCode {} and courierContNo {} has been successfully created", 
-                		locCode, courierContNo);
-                return ResponseEntity.status(HttpStatus.CREATED).body("Contract processed successfully.");
-            }
-        } catch (Exception e) {
-            logger.error("An error occurred while processing the courier contract", e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("An error occurred. Please try again.");
-        }
-		
-	}
+	        if (!existingContract.isPresent()) {
+	            statusCodeModal.setStatus_code(HttpStatus.NOT_FOUND.value());
+	            statusCodeModal.setStatus("Courier contract not found.");
+	            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(statusCodeModal);
+	        }
 
+	        MstCourierContract contractToUpdate = existingContract.get();
+	        mstCourierContract.setLocCode(contractToUpdate.getLocCode());  // Ensure locCode doesn't change
+	        mstCourierContract.setCourierContNo(courierContNo);
+	        mstCourierContract.setCreatedBy(username);
+	        mstCourierContract.setCreatedDate(LocalDate.now());
+	        mstCourierContract.setLastUpdatedDate(LocalDateTime.now());
 
-	public ResponseEntity<String> updateContract( String courierContNo, MstCourierContractDto request,HttpServletRequest httpRequest) {
-	    logger.info("Updating MstCourierContract Details: " + request);
-	    logger.info("Updating MstCourierContract Details: " + request.getCourierDiscounts());
-	    String token = jwtUtils.getJwtFromCookies(httpRequest);
-        String locCode = jwtUtils.getLocCodeFromJwtToken(token);
-          String  userid =jwtUtils.getUserNameFromJwtToken(token);
+	        MstCourierContract updatedContract = mstCourierContractRepository.save(mstCourierContract);
+	        statusCodeModal.setStatus_code(HttpStatus.OK.value());
+	        statusCodeModal.setStatus("Courier contract updated successfully.");
+	        return ResponseEntity.ok(statusCodeModal);
+	    }
 
-	    try {
-	        MstCourierContractPK contractPK = new MstCourierContractPK();
-	        contractPK.setLocCode(locCode);
-	        contractPK.setCourierContNo(courierContNo);
+	 @Transactional
+	    public ResponseEntity<StatusCodeModal> deleteCourierContract(String courierContNo, HttpServletRequest request) {
+	        String token = jwtUtils.getJwtFromCookies(request);
+	        String locCode = jwtUtils.getLocCodeFromJwtToken(token);
 
-	        // Fetch the existing contract
-	        Optional<MstCourierContract> existingContract = mstCourierContractRepository.findById(contractPK);
-	        if (existingContract.isPresent()) {
-	            MstCourierContract contract = existingContract.get();
-	            
-	          
-	            contract.setLocCode(locCode);
-	            contract.setCourierContNo(courierContNo);
-	            contract.setContractStartDate(request.getContractStartDate());
-	            contract.setContractEndDate(request.getContractEndDate());
-	            contract.setLastUpdatedDate(LocalDateTime.now());
+	        // Create composite key CourierContractId
+	        CourierContractId contractId = new CourierContractId(locCode, courierContNo);
 
-	            // Save the contract (without modifying the primary key)
-	            mstCourierContractRepository.save(contract);
-	            logger.info(" BEFORE IF CONDITION");
-	            
-	            // Update discount and rates logic (as before)
-	            if (request.getCourierDiscounts() != null) {
-	           
-	            	  logger.info(" AFTER IF CONDITION");
-	                
-	                List<MstCourierContractDiscount> existingDiscount = 
-	                    mstCourierContractDiscountRepository.findByLocCodeAndCourierContNo(locCode.trim(),courierContNo.trim());
-//	                logger.info("recieved existing discount  {}"+existingDiscount.toString());
+	        Optional<MstCourierContract> contractOptional = mstCourierContractRepository.findById(contractId);
+	        StatusCodeModal statusCodeModal = new StatusCodeModal();
 
+	        logger.info("before contract");
+	        if (contractOptional.isPresent()) {
+	            logger.info("after contract");
 
-	                if (!existingDiscount.isEmpty()) {
-		                logger.info(" existing discount object prasent and enter into if condition ");
-		                
-		                // Delete the old discount record
-	                    mstCourierContractDiscountRepository.deleteAll(existingDiscount);
-	                }
-	                
-	                for (MstCourierContractDiscountDTO discountDTO : request.getCourierDiscounts()) {
-	                	MstCourierContractDiscount newDiscount = new MstCourierContractDiscount();
+	            // Ensure the delete operation is performed within a transaction
+	         //   mstCourierContractRepository.deleteByLocCodeAndCourierContNo(locCode, courierContNo);
+	            mstCourierContractRepository.deleteById(contractId);
+	            statusCodeModal.setStatus_code(HttpStatus.OK.value());
+	            statusCodeModal.setStatus("Courier contract deleted successfully.");
+	            return ResponseEntity.ok(statusCodeModal);
+	        } else {
+	            statusCodeModal.setStatus_code(HttpStatus.NOT_FOUND.value());
+	            statusCodeModal.setStatus("Courier contract not found.");
+	            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(statusCodeModal);
+	        }
+	    }
 
-	                    newDiscount.setLocCode(locCode.trim());
-	                   newDiscount.setCourierContNo(courierContNo.trim());
-	                  newDiscount.setFromMonthlyAmt(discountDTO.getFromMonthlyAmt());
-	                  newDiscount.setToMonthlyAmt(discountDTO.getToMonthlyAmt());
-	                    newDiscount.setDiscountPercentage(discountDTO.getDiscountPercentage());
-	                    newDiscount.setCreatedBy(userid);
-	                    newDiscount.setStatus("A");
-	                    newDiscount.setCreatedDate(LocalDate.now());
+	    public List<MstCourierContract> getCourierContractByContNo(HttpServletRequest request) {
+	        String token = jwtUtils.getJwtFromCookies(request);
+	        String locCode = jwtUtils.getLocCodeFromJwtToken(token);
 
-	     	                    mstCourierContractDiscountRepository.save(newDiscount);
+	        // Create composite key CourierContractId
+	       // CourierContractId contractId = new CourierContractId(locCode, courierContNo);
+	        return mstCourierContractRepository.findByLocCode(locCode);
+	    }
+
+	    public ResponseEntity<List<MstCourierContract>> getContractsBasedOnCourierCodeAndLocCode(String courierCode, HttpServletRequest request) {
+	        
+	        // Extract locCode from JWT token
+	        String token = jwtUtils.getJwtFromCookies(request);
+	        String locCode = jwtUtils.getLocCodeFromJwtToken(token);
+
+	        try {
+	            // Fetch records from the database based on locCode and courierCode
+	            List<MstCourierContract> contracts = mstCourierContractRepository.findByLocCodeAndCourierCode(locCode, courierCode);
+	            return ResponseEntity.ok(contracts);
+	        } catch (Exception e) {
+	            // Handle exceptions, e.g., log the error or return a custom error message
+	            return ResponseEntity.status(500).body(null); // Return an appropriate error response
+	        }
+	    }
+	    
+	    
+	    
+	    
+	    //for rate section
+
+//		public ResponseEntity<?> createCourierContractRate(CourierContractRateDto mstCourierContractRateDto, HttpServletRequest request) {
+//			
+//			MstCourierContractRate courierrate=mstCourierContractRateDto.toMstCourierContractRate();
+//			 String token = jwtUtils.getJwtFromCookies(request);
+//		        String locCode = jwtUtils.getLocCodeFromJwtToken(token);
+//		        String username=  jwtUtils.getUserNameFromJwtToken(token);
+//
+//			courierrate.setLocCode(locCode);
+//			courierrate.setCreatedBy(username);
+//			courierrate.setStatus("A");
+//			courierrate.setCreatedDate(LocalDate.now());
+//		MstCourierContractRateId id=new MstCourierContractRateId();
+//		id.getLocCode();
+//		id.getCourierContNo();
+//		id.getFromWtGms();
+//		id.getToWtGms();
+//		id.getFromDistanceKm();
+//		id.getToDistanceKm();
+//			
+//			Optional<MstCourierContractRate> rate=mstCourierContractRateRepository.findById(id);
+//			if(rate.isPresent())
+//			{
+//				   StatusCodeModal statusCodeModal = new StatusCodeModal();
+//		            statusCodeModal.setStatus_code(HttpStatus.BAD_REQUEST.value());
+//		            statusCodeModal.setStatus("Courier contract rate already exists");
+//		            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(statusCodeModal);
+//			}
+//			
+//			MstCourierContractRate rateCreate=mstCourierContractRateRepository.save(courierrate);
+//			StatusCodeModal scm=new StatusCodeModal();
+//			scm.setStatus_code(HttpStatus.CREATED.value());
+//			scm.setStatus("rate cretaed succesfully");
+//			
+//			return ResponseEntity.status(HttpStatus.CREATED).body(scm);
+//			
+//			
+//			
+//		}
+	    
+	    public ResponseEntity<String> createContractRatesAndDiscounts(MstCourierContractDto request, HttpServletRequest httpRequest) {
+			logger.debug("Received MstCourierContract Details:" +request);
+			
+			    String token = jwtUtils.getJwtFromCookies(httpRequest);
+		        String locCode = jwtUtils.getLocCodeFromJwtToken(token);
+		        String username = jwtUtils.getUserNameFromJwtToken(token);		
+			String courierContNo=request.getCourierContNo();
+			try {
+				
+				
+				 if(request.getCourierRates() != null) {
+	            	    for (MstCourierContractRateDto ratesDto : request.getCourierRates()) {
+	            	        logger.debug("Received rate DTO: {}", ratesDto); // Log DTO values
+
+	            	        MstCourierContractRate courierRate = new MstCourierContractRate();
+	            	        courierRate.setLocCode(locCode);
+	            	        courierRate.setCourierContNo(courierContNo);
+	            	        courierRate.setFromWtGms(ratesDto.getFromWtGms());
+	            	        courierRate.setToWtGms(ratesDto.getToWtGms());
+	            	        courierRate.setFromDistanceKm(ratesDto.getFromDistanceKm());
+	            	        courierRate.setToDistanceKm(ratesDto.getToDistanceKm());
+	            	        courierRate.setRate(ratesDto.getRate());
+	            	        courierRate.setStatus("A");
+	            	        courierRate.setCreatedBy(username);
+	            	        courierRate.setCreatedDate(LocalDate.now());
+
+	            	        logger.debug("Saving courier rate: {}", courierRate); // Log before saving
+	            	        mstCourierContractRateRepository.save(courierRate);
+	            	    }
+	            	} else {
+//	            	    logger.error("Courier rates are null");
+//	            	    return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Rates object is not present.");
+	            		 for (MstCourierContractRateDto ratesDto : request.getCourierRates()) {
+		            	        logger.debug("Received rate DTO: {}", ratesDto); // Log DTO values
+	            		  MstCourierContractRate courierRate = new MstCourierContractRate();
+	            	        courierRate.setLocCode(locCode);
+	            	        courierRate.setCourierContNo(courierContNo);
+	            	        courierRate.setFromWtGms(ratesDto.getFromWtGms());
+	            	        courierRate.setToWtGms(ratesDto.getToWtGms());
+	            	        courierRate.setFromDistanceKm(ratesDto.getFromDistanceKm());
+	            	        courierRate.setToDistanceKm(ratesDto.getToDistanceKm());
+	            	        courierRate.setRate(ratesDto.getRate());
+	            	        courierRate.setStatus("A");
+	            	        courierRate.setCreatedBy(username);
+	            	        courierRate.setCreatedDate(LocalDate.now());
+
+	            	        logger.debug("Saving courier rate: {}", courierRate); // Log before saving
+	            	        mstCourierContractRateRepository.save(courierRate);
+	            	}
+
+	            	}
+	              if(request.getCourierDiscounts()!=null)  {
+	            	  for (MstCourierContractDiscountDTO discountDTO : request.getCourierDiscounts()) {
+						
+	            		  
+	            		  MstCourierContractDiscount discount=new MstCourierContractDiscount();
+	                      discount.setLocCode(locCode);
+	                      discount.setCourierContNo(courierContNo);
+	                      discount.setToMonthlyAmt(discountDTO.getToMonthlyAmt());
+	                      discount.setFromMonthlyAmt(discountDTO.getFromMonthlyAmt());
+	                      discount.setDiscountPercentage(discountDTO.getDiscountPercentage());
+	                      discount.setStatus("A");
+	                      discount.setCreatedBy(username);
+	                      discount.setCreatedDate(LocalDate.now());
+	                      
+	                      mstCourierContractDiscountRepository.save(discount);
 					}
-	                    
-
-	                }
-	               
-	            
-	            logger.info(" BEFORE IF CONDITION OF RATES");
-	            if (request.getCourierRates() != null) {
-	            	 logger.info(" AFTER IF CONDITION OF RATES");
-	                // Delete all the existing rates for the given locCode and courierContNo ONCE
-	                List<MstCourierContractRate> existingRates = 
-	                    mstCourierContractRateRepository.findByLocCodeAndCourierContNo(locCode.trim(), courierContNo.trim());
-
-	                if (!existingRates.isEmpty()) {
-	                    mstCourierContractRateRepository.deleteAll(existingRates);
-	                }
-
-	                // Now insert the list of new rates
-	                for (MstCourierContractRateDto ratesDto : request.getCourierRates()) {
-	                    MstCourierContractRate rate = new MstCourierContractRate();
-	                    rate.setLocCode(locCode);
-	                    rate.setCourierContNo(courierContNo);
-
-	                    rate.setFromWtGms(ratesDto.getFromWtGms());
-	                    rate.setToWtGms(ratesDto.getToWtGms());
-	                    rate.setFromDistanceKm(ratesDto.getFromDistanceKm());
-	                    rate.setToDistanceKm(ratesDto.getToDistanceKm());
-	                    rate.setRate(ratesDto.getRate());
-	                    rate.setCreatedBy(userid);
-	                    rate.setStatus("A");
-	                    rate.setCreatedDate(LocalDate.now());
-
-	                    // Save each rate in the loop
-	                    mstCourierContractRateRepository.save(rate);
-	                }
-	            }
-
-
-	            logger.info("Courier contract with locCode {} and courierContNo {} has been updated successfully", 
-	                        httpRequest, courierContNo);
-	            return ResponseEntity.status(HttpStatus.OK).body("Contract updated successfully.");
-	        } else {
-	            logger.info("Courier contract with locCode {} and courierContNo {} not found for update", 
-	                        httpRequest, courierContNo);
-	            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Contract not found.");
+	              
+	              }
+	              else{
+	            	//  return ResponseEntity.status(HttpStatus.NOT_FOUND).body("discount object is not there");
+//	            	  for (MstCourierContractRateDto ratesDto : request.getCourierRates()) {
+//	            	        logger.debug("Received rate DTO: {}", ratesDto); // Log DTO values
+ for (MstCourierContractDiscountDTO discountDTO : request.getCourierDiscounts()) {
+						
+	            		  
+	            		  MstCourierContractDiscount discount=new MstCourierContractDiscount();
+	                      discount.setLocCode(locCode);
+	                      discount.setCourierContNo(courierContNo);
+	                      discount.setToMonthlyAmt(discountDTO.getToMonthlyAmt());
+	                      discount.setFromMonthlyAmt(discountDTO.getFromMonthlyAmt());
+	                      discount.setDiscountPercentage(discountDTO.getDiscountPercentage());
+	                      discount.setStatus("A");
+	                      discount.setCreatedBy(username);
+	                      discount.setCreatedDate(LocalDate.now());
+	                      
+	                      mstCourierContractDiscountRepository.save(discount);
+	              }
+	              }
+	              
+	             
+	           
+	                logger.info("Courier contract with locCode {} and courierContNo {} has been successfully created", 
+	                		locCode, courierContNo);
+	                return ResponseEntity.status(HttpStatus.CREATED).body("Contract processed successfully.");
+	              
+	   
+	        } catch (Exception e) {
+	            logger.error("An error occurred while processing the courier contract", e);
+	            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("An error occurred. Please try again.");
 	        }
-	    } catch (Exception e) {
-	        logger.error("An error occurred while updating the courier contract", e);
-	        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("An error occurred. Please try again.");
-	    }
-	}
-
-
-
-	public ResponseEntity<String> deleteContract(String courierContNo, HttpServletRequest httpRequest) {
-	    String token = jwtUtils.getJwtFromCookies(httpRequest);
-	    String locCode = jwtUtils.getLocCodeFromJwtToken(token);
-
-	    try {
-	        // Fetch the contract based on the location code and courier contract number
-	        Optional<MstCourierContract> existingContract = 
-	            mstCourierContractRepository.findByLocCodeAndCourierContNo(locCode, courierContNo);
-
-	        if (existingContract.isPresent()) {
-	            MstCourierContract mstCourierContract = existingContract.get();
-	            mstCourierContract.setStatus("D"); // Set the status to "D"
-	            mstCourierContract.setLastUpdatedDate(LocalDateTime.now());
-	            mstCourierContractRepository.save(mstCourierContract); // Save the updated contract
-	            
-	            // Update the related discounts
-	            List<MstCourierContractDiscount> existingDiscounts = 
-	                mstCourierContractDiscountRepository.findByLocCodeAndCourierContNo(locCode, courierContNo);
-	            for (MstCourierContractDiscount discount : existingDiscounts) {
-	                discount.setStatus("D"); // Set the status to "D"
-	                discount.setCreatedDate(LocalDate.now()); // Update created date if needed
-	                mstCourierContractDiscountRepository.save(discount); // Save the updated discount
-	            }
-
-	            // Update the related rates
-	            List<MstCourierContractRate> existingRates = 
-	                mstCourierContractRateRepository.findByLocCodeAndCourierContNo(locCode, courierContNo);
-	            for (MstCourierContractRate rate : existingRates) {
-	                rate.setStatus("D"); // Set the status to "D"
-	                rate.setCreatedDate(LocalDate.now()); // Update created date if needed
-	                mstCourierContractRateRepository.save(rate); // Save the updated rate
-	            }
-
-	            return ResponseEntity.ok("Contract deactivated successfully.");
-	        } else {
-	            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Contract not found.");
-	        }
-	    } catch (Exception e) {
-	        // Log the error and return a user-friendly message
-	        System.err.println("Error occurred while deactivating the contract: " + e.getMessage());
-	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-	                             .body("Error occurred while deactivating the contract.");
-	    }
-	}
-
-
-
-
-	 public List<MstCourierContracHistoryResponse> getAllContractsBasedOnLocCodeAndStatus(HttpServletRequest request) {
-	        String token = jwtUtils.getJwtFromCookies(request);
-	        String locCode = jwtUtils.getLocCodeFromJwtToken(token);
-	        
-	        ModelMapper modelMapper=new ModelMapper();
-	        // Fetch contracts based on locCode
-	        List<MstCourierContract> contracts = mstCourierContractRepository.findByLocCode(locCode);
-	        
-	        List<MstCourierContracHistoryResponse> contractHistoryResponses = new ArrayList<>();
-	        
-	        // Convert each contract to the DTO
-	        for (MstCourierContract contract : contracts) {
-	            MstCourierContracHistoryResponse dto = modelMapper.map(contract, MstCourierContracHistoryResponse.class);
-	            
-	            // Map discounts
-	            List<MstCourierContractDiscountDTO> discountDTOs = new ArrayList<>();
-	            for (MstCourierContractDiscount discount : contract.getDiscounts()) {
-	                MstCourierContractDiscountDTO discountDTO = modelMapper.map(discount, MstCourierContractDiscountDTO.class);
-	                discountDTOs.add(discountDTO);
-	            }
-	            dto.setDiscounts(discountDTOs);
-	            
-	            // Map rates
-	            List<MstCourierContractRateDto> rateDTOs = new ArrayList<>();
-	            for (MstCourierContractRate rate : contract.getRates()) {
-	                MstCourierContractRateDto rateDTO = modelMapper.map(rate, MstCourierContractRateDto.class);
-	                rateDTOs.add(rateDTO);
-	            }
-	            dto.setRates(rateDTOs);
-	            
-	            contractHistoryResponses.add(dto);
-	        }
-
-	        return contractHistoryResponses;
-	    }
-
-	public List<MstCourierContracHistoryResponse> getAllActiveContractsBasedOnLocCode(HttpServletRequest request) {
-	    String token = jwtUtils.getJwtFromCookies(request);
-	    String locCode = jwtUtils.getLocCodeFromJwtToken(token);
+			
+		}
 	    
-	    ModelMapper modelMapper = new ModelMapper();
-	    // Fetch only active contracts based on locCode
-	    List<MstCourierContract> contracts = mstCourierContractRepository.findByLocCodeAndStatus(locCode, "A");
 	    
-	    List<MstCourierContracHistoryResponse> contractHistoryResponses = new ArrayList<>();
+//	    public ResponseEntity<?> deleteContract(String courierContNo,HttpServletRequest httpRequest) {
+//	    	
+//	    	
+//	    	 String token = jwtUtils.getJwtFromCookies(httpRequest);
+//		        String locCode = jwtUtils.getLocCodeFromJwtToken(token);
+//		    //    String username = jwtUtils.getUserNameFromJwtToken(token);
+//	        try {
+//	            // Fetch and delete the discount for the contract
+//	            MstCourierContractDiscountId discountId = new MstCourierContractDiscountId();
+//	            discountId.getLocCode();
+//	            discountId.getCourierContNo();
+//	            // Assuming you have the values for `fromMonthlyAmt` and `toMonthlyAmt`, you should set those too:
+//	            discountId.getFromMonthlyAmt(); // Example, replace with actual value if available
+//	            discountId.getToMonthlyAmt(); // Example, replace with actual value if available
+//	            
+////	            MstCourierContractDiscount discount = 
+////	                    mstCourierContractDiscountRepository.findByLocCodeAndCourierContNo(locCode, courierContNo);
+//	            Optional<MstCourierContractDiscount> discount = 
+//	                    mstCourierContractDiscountRepository.findById(discountId);
+//	            
+//	            if (discount.isPresent()) {
+//	                mstCourierContractDiscountRepository.deleteById(discountId);
+//	                // After deleting discount, proceed to delete rate
+//	                MstCourierContractRateId rateId = new MstCourierContractRateId();
+//	                rateId.getLocCode();
+//	                rateId.getCourierContNo();
+//	                // Assuming you have the rate parameters, set those too:
+//	                rateId.getFromWtGms(); // Example, replace with actual value if available
+//	                rateId.getToWtGms(); // Example, replace with actual value if available
+//	                rateId.getFromDistanceKm(); // Example, replace with actual value if available
+//	                rateId.getToDistanceKm(); // Example, replace with actual value if available
+//	                
+//	                Optional<MstCourierContractRate> rate = 
+//	                        mstCourierContractRateRepository.findById(rateId);
+//	                
+//	                if (rate.isPresent()) {
+//	                    mstCourierContractRateRepository.deleteById(rateId);
+//	                    return ResponseEntity.ok("Contract and related records deleted successfully.");
+//	                } else {
+//	                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Rate not found for the contract.");
+//	                }
+//	            } else {
+//	                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Discount not found for the contract.");
+//	            }
+//	        } catch (Exception e) {
+//	            System.err.println("Error occurred while deleting the contract: " + e.getMessage());
+//	            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+//	                                 .body("Error occurred while deleting the contract.");
+//	        }
+//	    }
 	    
-	    // Convert each contract to the DTO
-	    for (MstCourierContract contract : contracts) {
-	        MstCourierContracHistoryResponse dto = modelMapper.map(contract, MstCourierContracHistoryResponse.class);
-	        
-	        // Map discounts
-	        List<MstCourierContractDiscountDTO> discountDTOs = new ArrayList<>();
-	        for (MstCourierContractDiscount discount : contract.getDiscounts()) {
-	            MstCourierContractDiscountDTO discountDTO = modelMapper.map(discount, MstCourierContractDiscountDTO.class);
-	            discountDTOs.add(discountDTO);
-	        }
-	        dto.setDiscounts(discountDTOs);
-	        
-	        // Map rates
-	        List<MstCourierContractRateDto> rateDTOs = new ArrayList<>();
-	        for (MstCourierContractRate rate : contract.getRates()) {
-	            MstCourierContractRateDto rateDTO = modelMapper.map(rate, MstCourierContractRateDto.class);
-	            rateDTOs.add(rateDTO);
-	        }
-	        dto.setRates(rateDTOs);
-	        
-	        contractHistoryResponses.add(dto);
-	    }
+	    public ResponseEntity<?> deleteContract(
+	            String courierContNo,
+	            Double fromWtGms, Double toWtGms,
+	            Double fromDistanceKm, Double toDistanceKm,
+	            Double fromMonthlyAmt, Double toMonthlyAmt,
+	            HttpServletRequest httpRequest) {
 
-	    return contractHistoryResponses;
-	}
-
-
-
-	    
-	    public List<MstCourierContracHistoryResponse> getContractBasedOnLocCodeCourierContNo(String courierContNo, HttpServletRequest request) {
-	        String token = jwtUtils.getJwtFromCookies(request);
+	        String token = jwtUtils.getJwtFromCookies(httpRequest);
 	        String locCode = jwtUtils.getLocCodeFromJwtToken(token);
 
-	        Optional<MstCourierContract> contracts = mstCourierContractRepository.findByLocCodeAndCourierContNo(locCode, courierContNo);
+	        try {
+	            // Create ID objects with provided parameters
+	            MstCourierContractDiscountId discountId = new MstCourierContractDiscountId();
+	            discountId.setLocCode(locCode);
+	            discountId.setCourierContNo(courierContNo);
+	            discountId.setFromMonthlyAmt(fromMonthlyAmt);
+	            discountId.setToMonthlyAmt(toMonthlyAmt);
 
-	        return contracts.stream().map(contract -> {
-	            MstCourierContracHistoryResponse response = modelMapper.map(contract, MstCourierContracHistoryResponse.class);
+	            Optional<MstCourierContractDiscount> discount = 
+	                    mstCourierContractDiscountRepository.findById(discountId);
 
-	            // Ensure all fields are mapped
-	            response.setCourierContNo(contract.getCourierContNo());
-	            response.setStatus(contract.getStatus());
-	            response.setCreatedBy(contract.getCreatedBy());
-	            response.setCourierCode(contract.getCourierCode());
-	            response.setContractStartDate(contract.getContractStartDate());
-	            response.setContractEndDate(contract.getContractEndDate());
-	            response.setCreatedDate(contract.getCreatedDate());
-	            response.setLastUpdatedDate(contract.getLastUpdatedDate());
+	            if (discount.isPresent()) {
+	                // Delete the specific discount record
+	                mstCourierContractDiscountRepository.deleteById(discountId);
 
-	            // Populate discounts
-	            List<MstCourierContractDiscountDTO> discounts = mstCourierContractDiscountRepository.findByLocCodeAndCourierContNo(locCode, courierContNo)
-	                    .stream()
-	                    .map(this::convertToDiscountDTO)
-	                    .collect(Collectors.toList());
-	            response.setDiscounts(discounts);
+	                // Create Rate ID with provided parameters
+	                MstCourierContractRateId rateId = new MstCourierContractRateId();
+	                rateId.setLocCode(locCode);
+	                rateId.setCourierContNo(courierContNo);
+	                rateId.setFromWtGms(fromWtGms);
+	                rateId.setToWtGms(toWtGms);
+	                rateId.setFromDistanceKm(fromDistanceKm);
+	                rateId.setToDistanceKm(toDistanceKm);
 
-	            // Populate rates
-	            List<MstCourierContractRateDto> rates = mstCourierContractRateRepository.findByLocCodeAndCourierContNo(locCode, courierContNo)
-	                    .stream()
-	                    .map(this::convertToRateDTO)
-	                    .collect(Collectors.toList());
-	            response.setRates(rates);
+	                Optional<MstCourierContractRate> rate = 
+	                        mstCourierContractRateRepository.findById(rateId);
 
-	            return response;
-	        }).collect(Collectors.toList());
+	                if (rate.isPresent()) {
+	                    // Delete the specific rate record
+	                    mstCourierContractRateRepository.deleteById(rateId);
+	                    return ResponseEntity.ok("Specific contract rate and discount deleted successfully.");
+	                } else {
+	                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Rate not found for the contract.");
+	                }
+	            } else {
+	                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Discount not found for the contract.");
+	            }
+	        } catch (Exception e) {
+	            System.err.println("Error occurred while deleting the contract: " + e.getMessage());
+	            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+	                                 .body("Error occurred while deleting the contract.");
+	        }
 	    }
 
-	    private MstCourierContractDiscountDTO convertToDiscountDTO(MstCourierContractDiscount discount) {
-	        return modelMapper.map(discount, MstCourierContractDiscountDTO.class);
-	    }
 
-	    private MstCourierContractRateDto convertToRateDTO(MstCourierContractRate rate) {
-	        return modelMapper.map(rate, MstCourierContractRateDto.class);
-	    }
-}
+	  
+	        }

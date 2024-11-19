@@ -13,6 +13,10 @@ import com.iocl.Dispatch_Portal_Application.composite_pk.MstCourierContractRateI
 @Repository
 public interface MstCourierContractRateRepository extends JpaRepository<MstCourierContractRate, MstCourierContractRateId> {
 
-	@Query("SELECT cd FROM MstCourierContractRate cd where cd.locCode=:locCode AND cd.courierContNo=:courierContNo")
-	List<MstCourierContractRate> findByLocCodeAndCourierContNo(@Param("locCode")  String locCode, @Param("courierContNo") String courierContNo);    
+	MstCourierContractRate findByLocCodeAndCourierContNo(String locCode, String contno);
+
+	List<MstCourierContractRate> findByCourierContNo(String courierContNo);
+
+//	@Query("SELECT cd FROM MstCourierContractRate cd where cd.locCode=:locCode AND cd.courierContNo=:courierContNo")
+//	List<MstCourierContractRate> findByLocCodeAndCourierContNo(@Param("locCode")  String locCode, @Param("courierContNo") String courierContNo);    
 }

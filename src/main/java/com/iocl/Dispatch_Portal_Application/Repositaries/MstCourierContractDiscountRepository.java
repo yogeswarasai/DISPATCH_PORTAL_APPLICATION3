@@ -14,6 +14,9 @@ public interface MstCourierContractDiscountRepository  extends JpaRepository<Mst
 
 	
 	@Query("SELECT cd FROM MstCourierContractDiscount cd where cd.locCode=:locCode AND cd.courierContNo=:courierContNo")
-	List<MstCourierContractDiscount> findByLocCodeAndCourierContNo(@Param("locCode")  String locCode, @Param("courierContNo") String courierContNo);
+	MstCourierContractDiscount findByLocCodeAndCourierContNo(@Param("locCode")  String locCode, @Param("courierContNo") String courierContNo);
 	
+	
+	List<MstCourierContractDiscount> findByCourierContNo(String courierContNo);
+
 }

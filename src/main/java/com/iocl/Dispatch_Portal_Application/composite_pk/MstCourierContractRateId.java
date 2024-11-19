@@ -47,7 +47,19 @@ public class MstCourierContractRateId implements Serializable {
 	}
 
     
-    
+	public MstCourierContractRateId() {}
+
+    // Constructor with all fields
+    public MstCourierContractRateId(String locCode, String courierContNo, Double fromWtGms, 
+                                    Double toWtGms, Double fromDistanceKm, Double toDistanceKm) {
+        this.locCode = locCode;
+        this.courierContNo = courierContNo;
+        this.fromWtGms = fromWtGms;
+        this.toWtGms = toWtGms;
+        this.fromDistanceKm = fromDistanceKm;
+        this.toDistanceKm = toDistanceKm;
+    }
+
     
   
 }

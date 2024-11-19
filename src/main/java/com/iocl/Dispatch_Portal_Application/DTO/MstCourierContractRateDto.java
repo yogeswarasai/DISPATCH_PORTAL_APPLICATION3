@@ -1,7 +1,18 @@
 package com.iocl.Dispatch_Portal_Application.DTO;
 
 public class MstCourierContractRateDto {
-	
+    public MstCourierContractRateDto(String courierContNo, double fromWtGms, double toWtGms, double fromDistanceKm,
+			double toDistanceKm, double rate) {
+		super();
+		this.courierContNo = courierContNo;
+		this.fromWtGms = fromWtGms;
+		this.toWtGms = toWtGms;
+		this.fromDistanceKm = fromDistanceKm;
+		this.toDistanceKm = toDistanceKm;
+		this.rate = rate;
+	}
+	private String courierContNo;
+
 	    private double fromWtGms;
 	    private double toWtGms;
 	    private double fromDistanceKm;
