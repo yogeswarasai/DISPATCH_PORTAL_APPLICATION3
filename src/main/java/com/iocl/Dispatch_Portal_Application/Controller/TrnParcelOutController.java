@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.iocl.Dispatch_Portal_Application.DTO.ParcelOutDto;
 import com.iocl.Dispatch_Portal_Application.DTO.ParcelOutResponse;
 import com.iocl.Dispatch_Portal_Application.Entity.TrnParcelOut;
+import com.iocl.Dispatch_Portal_Application.Repositaries.TrnParcelOutRepository;
 import com.iocl.Dispatch_Portal_Application.Security.JwtUtils;
 import com.iocl.Dispatch_Portal_Application.ServiceLayer.TrnParcelOutService;
 import com.iocl.Dispatch_Portal_Application.modal.StatusCodeModal;
@@ -32,6 +33,8 @@ public class TrnParcelOutController {
 
 	@Autowired
     private TrnParcelOutService trnParcelOutService;
+	@Autowired
+	private TrnParcelOutRepository trnParcelOutRepository;
 	@Autowired
 	private JwtUtils jwtUtils;
 	
@@ -50,6 +53,14 @@ public class TrnParcelOutController {
 //	        List<TrnParcelOut> parcels = trnParcelOutService.getparcelsByLocationCode(locCode);
 //	        return ResponseEntity.ok(parcels);
 //	    }
+	    
+	    
+	    @GetMapping("/consignment/{number}/exists")
+	    public ResponseEntity<Boolean> checkConsignmentExists(@PathVariable String number) {
+	        boolean exists = trnParcelOutRepository.existsByConsignmentNumber(number);
+	        return ResponseEntity.ok(exists);
+	    }
+
 	    
 	    @GetMapping("/get-out-parcelsbyloccode")
 	    public ResponseEntity<Page<ParcelOutDto>> getParcelsByLocationCode(
@@ -89,6 +100,19 @@ public class TrnParcelOutController {
 
 	    }
 
+	    @GetMapping("/distance")
+	    public ResponseEntity<?> getDistance(
+	           
+	            @RequestParam("recipientLocCode") String recipientLocCode,HttpServletRequest request) {
+	        try {
+	            Double distance = trnParcelOutService.getDistance(recipientLocCode,request);
+	            return ResponseEntity.ok(distance);
+	        } catch (RuntimeException e) {
+	            return ResponseEntity.badRequest().body(e.getMessage());
+	        } catch (Exception e) {
+	            return ResponseEntity.status(500).body("Internal server error occurred.");
+	        }
+	    }
 
 }
 

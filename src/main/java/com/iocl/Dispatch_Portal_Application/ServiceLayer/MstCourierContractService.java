@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import javax.persistence.EntityNotFoundException;
 import javax.servlet.http.HttpServletRequest;
 import javax.transaction.Transactional;
 
@@ -42,6 +43,8 @@ public class MstCourierContractService {
 	 private MstCourierContractRateRepository mstCourierContractRateRepository;
      private JwtUtils jwtUtils;
      private final ModelMapper modelMapper;
+     
+     
 
 
 	public MstCourierContractService(MstCourierContractRepository mstCourierContractRepository,
@@ -375,7 +378,6 @@ public class MstCourierContractService {
 	            String courierContNo,
 	            Double fromWtGms, Double toWtGms,
 	            Double fromDistanceKm, Double toDistanceKm,
-	            Double fromMonthlyAmt, Double toMonthlyAmt,
 	            HttpServletRequest httpRequest) {
 
 	        String token = jwtUtils.getJwtFromCookies(httpRequest);
@@ -383,19 +385,6 @@ public class MstCourierContractService {
 
 	        try {
 	            // Create ID objects with provided parameters
-	            MstCourierContractDiscountId discountId = new MstCourierContractDiscountId();
-	            discountId.setLocCode(locCode);
-	            discountId.setCourierContNo(courierContNo);
-	            discountId.setFromMonthlyAmt(fromMonthlyAmt);
-	            discountId.setToMonthlyAmt(toMonthlyAmt);
-
-	            Optional<MstCourierContractDiscount> discount = 
-	                    mstCourierContractDiscountRepository.findById(discountId);
-
-	            if (discount.isPresent()) {
-	                // Delete the specific discount record
-	                mstCourierContractDiscountRepository.deleteById(discountId);
-
 	                // Create Rate ID with provided parameters
 	                MstCourierContractRateId rateId = new MstCourierContractRateId();
 	                rateId.setLocCode(locCode);
@@ -411,13 +400,11 @@ public class MstCourierContractService {
 	                if (rate.isPresent()) {
 	                    // Delete the specific rate record
 	                    mstCourierContractRateRepository.deleteById(rateId);
-	                    return ResponseEntity.ok("Specific contract rate and discount deleted successfully.");
+	                    return ResponseEntity.ok("Specific contract rate  deleted successfully.");
 	                } else {
 	                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Rate not found for the contract.");
 	                }
-	            } else {
-	                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Discount not found for the contract.");
-	            }
+	           
 	        } catch (Exception e) {
 	            System.err.println("Error occurred while deleting the contract: " + e.getMessage());
 	            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -425,6 +412,119 @@ public class MstCourierContractService {
 	        }
 	    }
 
+		public ResponseEntity<?> deleteContractdiscount(String courierContNo, Double fromMonthlyAmt,
+				Double toMonthlyAmt, HttpServletRequest httpRequest) {
+			
+			 String token = jwtUtils.getJwtFromCookies(httpRequest);
+		        String locCode = jwtUtils.getLocCodeFromJwtToken(token);
+		        
+		        try {
+		            // Create ID objects with provided parameters
+		            MstCourierContractDiscountId discountId = new MstCourierContractDiscountId();
+		            discountId.setLocCode(locCode);
+		            discountId.setCourierContNo(courierContNo);
+		            discountId.setFromMonthlyAmt(fromMonthlyAmt);
+		            discountId.setToMonthlyAmt(toMonthlyAmt);
+		           
 
-	  
+		            Optional<MstCourierContractDiscount> discount = 
+		                    mstCourierContractDiscountRepository.findById(discountId);
+
+		            if (discount.isPresent()) {
+		                // Delete the specific discount record
+		                mstCourierContractDiscountRepository.deleteById(discountId);
+	                    return ResponseEntity.ok("Specific contract discount deleted successfully.");
+
+
+		            } else {
+		                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Discount not found for the contract.");
+		            }
+		        } catch (Exception e) {
+		            System.err.println("Error occurred while deleting the contract: " + e.getMessage());
+		            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+		                                 .body("Error occurred while deleting the contract.");
+		        }
+		
+			
+		}
+
+		@Transactional
+		public void updateCourierRateFields(String courierContNo, MstCourierContractRate updatedRate, Double fromWtGms, Double toWtGms, Double fromDistanceKm, Double toDistanceKm, HttpServletRequest httpRequest) {
+		    String token = jwtUtils.getJwtFromCookies(httpRequest);
+		    String locCode = jwtUtils.getLocCodeFromJwtToken(token);
+	        String username = jwtUtils.getUserNameFromJwtToken(token);		
+
+		    // Step 1: Delete the old record using the original primary keys
+		    MstCourierContractRateId oldRateId = new MstCourierContractRateId();
+		    oldRateId.setLocCode(locCode);
+		    oldRateId.setCourierContNo(courierContNo);
+		    oldRateId.setFromWtGms(fromWtGms);
+		    oldRateId.setToWtGms(toWtGms);
+		    oldRateId.setFromDistanceKm(fromDistanceKm);
+		    oldRateId.setToDistanceKm(toDistanceKm);
+		    Optional<MstCourierContractRate> rateexists= mstCourierContractRateRepository.findById(oldRateId);
+		    // Check if the record exists before deleting
+//		    if (!mstCourierContractRateRepository.existsById(oldRateId)) {
+//		        throw new EntityNotFoundException("Rate record not found for the provided ID: " + oldRateId);
+//		    }
+              if(rateexists.isPresent())
+              {
+		    // Delete the old rate record
+		    logger.info("Deleting rate record with ID: {}", oldRateId);
+		    mstCourierContractRateRepository.deleteById(oldRateId);
+
+		    // Step 2: Create and save the new record with updated primary key
+		    MstCourierContractRate newRate = new MstCourierContractRate();
+		    newRate.setLocCode(locCode);
+		    newRate.setCourierContNo(courierContNo.trim());
+		    newRate.setFromWtGms(updatedRate.getFromWtGms());
+		    newRate.setToWtGms(updatedRate.getToWtGms());
+		    newRate.setFromDistanceKm(updatedRate.getFromDistanceKm());
+		    newRate.setToDistanceKm(updatedRate.getToDistanceKm());
+		    newRate.setRate(updatedRate.getRate());
+		    newRate.setCreatedBy(username);
+		    newRate.setStatus("A");
+		    newRate.setCreatedDate(LocalDate.now());
+
+		    // Save the new rate record with the updated primary key
+		    logger.info("Saving new rate record: {}", newRate);
+		    mstCourierContractRateRepository.save(newRate);
+              }
+		}
+
+
+		    @Transactional
+		    public void updateCourierDiscountFields(String courierContNo, Double fromMonthlyAmt, Double toMonthlyAmt, MstCourierContractDiscount updatedDiscount, HttpServletRequest httpRequest) {
+		    	
+		    	
+		    	 String token = jwtUtils.getJwtFromCookies(httpRequest);
+				    String locCode = jwtUtils.getLocCodeFromJwtToken(token);
+			        String username = jwtUtils.getUserNameFromJwtToken(token);
+		        // Step 1: Delete the old record using the original primary keys
+		        MstCourierContractDiscountId oldDiscountId = new MstCourierContractDiscountId();
+		        oldDiscountId.setLocCode(locCode);
+		        oldDiscountId.setCourierContNo(courierContNo);
+		        oldDiscountId.setFromMonthlyAmt(fromMonthlyAmt);
+		        oldDiscountId.setToMonthlyAmt(toMonthlyAmt);
+		        // Delete the old discount record
+			    Optional<MstCourierContractDiscount> discountexists= mstCourierContractDiscountRepository.findById(oldDiscountId);
+			    if(discountexists.isPresent())
+	              {
+		        mstCourierContractDiscountRepository.deleteById(oldDiscountId);
+
+		        // Step 2: Create and save the new record with updated primary key
+		        MstCourierContractDiscount newDiscount = new MstCourierContractDiscount();
+		        newDiscount.setLocCode(locCode);
+		        newDiscount.setCourierContNo(courierContNo);
+		        newDiscount.setFromMonthlyAmt(updatedDiscount.getFromMonthlyAmt());
+		        newDiscount.setToMonthlyAmt(updatedDiscount.getToMonthlyAmt());
+		        newDiscount.setDiscountPercentage(updatedDiscount.getDiscountPercentage());
+		        newDiscount.setStatus("A");
+		        newDiscount.setCreatedBy(username);
+		        newDiscount.setCreatedDate(LocalDate.now());
+
+		        // Save the new discount record with the updated primary key
+		        mstCourierContractDiscountRepository.save(newDiscount);
+		    }
+		    }
 	        }

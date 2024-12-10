@@ -108,8 +108,8 @@ public class TrnParcelOutService {
 	                            "<p>Please find the details in the attached PDF.</p>" +
 	                            "<p>Best regards,<br>" +
 	                            "Indian Oil Corporation Limited</p>";
-//	                    emailService.sendEmail(email, subject, messageBody, pdfBytes);	                	
-	                    //emailService.sendEmail(email, "Parcel Notification", "You have received a new parcel with Tracking ID: " + createdParcel.getConsignmentNumber(), pdfBytes);
+	               //     emailService.sendEmail(email, subject, messageBody, pdfBytes);	                	
+	              //      emailService.sendEmail(email, "Parcel Notification", "You have received a new parcel with Tracking ID: " + createdParcel.getConsignmentNumber(), pdfBytes);
 	                }
 	            }
 
@@ -237,6 +237,7 @@ public class TrnParcelOutService {
 	            document.add(new Paragraph("Courier: " + parcel.getCourierName()));
 	            document.add(new Paragraph("Weight: " + parcel.getWeight()));
 	            document.add(new Paragraph("Unit: " + parcel.getUnit()));
+	            document.add(new Paragraph("Distance:" +parcel.getDistance()));
 	            document.add(new Paragraph("Record Status: " + parcel.getRecordStatus()));
 	        } catch (DocumentException e) {
 	            e.printStackTrace();
@@ -284,6 +285,7 @@ public class TrnParcelOutService {
 	            dto.setCourierName(parcel.getCourierName());
 	            dto.setWeight(parcel.getWeight());
 	            dto.setUnit(parcel.getUnit());
+	            dto.setDistance(parcel.getDistance());
 	            dto.setRecordStatus(parcel.getRecordStatus());
 	            dto.setCreatedBy(parcel.getCreatedBy());
 	            dto.setCreatedDate(parcel.getCreatedDate());
@@ -342,6 +344,7 @@ public class TrnParcelOutService {
 		            dto.setCourierName(parcel.getCourierName());
 		            dto.setWeight(parcel.getWeight());
 		            dto.setUnit(parcel.getUnit());
+		            dto.setDistance(parcel.getDistance());
 		            dto.setRecordStatus(parcel.getRecordStatus());
 		            dto.setCreatedBy(parcel.getCreatedBy());
 		            dto.setCreatedDate(parcel.getCreatedDate());
@@ -394,6 +397,7 @@ public class TrnParcelOutService {
 		            dto.setCourierName(parcel.getCourierName());
 		            dto.setWeight(parcel.getWeight());
 		            dto.setUnit(parcel.getUnit());
+		            dto.setDistance(parcel.getDistance());
 		            dto.setRecordStatus(parcel.getRecordStatus());
 		            dto.setCreatedBy(parcel.getCreatedBy());
 		            dto.setCreatedDate(parcel.getCreatedDate());
@@ -445,6 +449,7 @@ public class TrnParcelOutService {
 	            dto.setCourierName(parcel.getCourierName());
 	            dto.setWeight(parcel.getWeight());
 	            dto.setUnit(parcel.getUnit());
+	            dto.setDistance(parcel.getDistance());
 	            dto.setRecordStatus(parcel.getRecordStatus());
 	            dto.setCreatedBy(parcel.getCreatedBy());
 	            dto.setCreatedDate(parcel.getCreatedDate());
@@ -487,6 +492,7 @@ public class TrnParcelOutService {
 		            dto.setCourierName(parcel.getCourierName());
 		            dto.setWeight(parcel.getWeight());
 		            dto.setUnit(parcel.getUnit());
+		            dto.setDistance(parcel.getDistance());
 		            dto.setRecordStatus(parcel.getRecordStatus());
 		            dto.setCreatedBy(parcel.getCreatedBy());
 		            dto.setCreatedDate(parcel.getCreatedDate());
@@ -586,5 +592,24 @@ public class TrnParcelOutService {
 		        }
 
 		    }
+		 
+		 public Double getDistance(String recipientLocCode, HttpServletRequest request) {
+			    String token = jwtUtils.getJwtFromCookies(request);
+
+		        // Validate and extract information from the JWT token
+		        String senderLocCode = jwtUtils.getLocCodeFromJwtToken(token);
+			    logger.info("Fetching distance for senderLocCode: {} and recipientLocCode: {}", senderLocCode, request);
+			    Double distance = trnParcelOutRepository.findDistanceBySenderAndRecipientNative(senderLocCode, recipientLocCode);
+			    logger.debug("Query result: {}", distance);
+			    
+			    if (distance == null) {
+			        logger.warn("No distance found for senderLocCode: {} and recipientLocCode: {}", senderLocCode, request);
+			        return 0.0;
+			    }
+			    
+			    logger.info("Distance retrieved successfully: {}", distance);
+			    return distance;
+			}
+
 	}
 

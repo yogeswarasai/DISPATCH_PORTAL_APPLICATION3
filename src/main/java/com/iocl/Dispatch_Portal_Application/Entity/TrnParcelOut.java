@@ -71,7 +71,8 @@ public class TrnParcelOut {
     
     @Column(name = "last_updated_date")
     private LocalDateTime LastUpdatedDate;
-
+    @Column(name="distance")
+    private Double distance;
 
     // Relationships
 //    @ManyToOne

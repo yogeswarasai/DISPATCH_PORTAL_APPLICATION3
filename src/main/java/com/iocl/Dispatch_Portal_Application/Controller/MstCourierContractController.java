@@ -2,12 +2,14 @@ package com.iocl.Dispatch_Portal_Application.Controller;
 
 
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -121,22 +123,77 @@ public class MstCourierContractController {
 //			return mstCourierContractService.deleteContract(courierContNo,httpRequest);
 //			  
 //		  }
-	    @DeleteMapping("/delete/{courierContNo}")
+	    @DeleteMapping("/delete/rate/{courierContNo}")
 	    public ResponseEntity<?> deleteContract(
 	            @PathVariable String courierContNo,
 	            @RequestParam(required = false) Double fromWtGms,
 	            @RequestParam(required = false) Double toWtGms,
 	            @RequestParam(required = false) Double fromDistanceKm,
 	            @RequestParam(required = false) Double toDistanceKm,
+	            HttpServletRequest httpRequest) {
+
+	        // Pass the additional parameters to the service method
+	        return mstCourierContractService.deleteContract(
+	                courierContNo, fromWtGms, toWtGms, fromDistanceKm, toDistanceKm, httpRequest);
+	    }
+
+	    
+	    @DeleteMapping("/delete/discount/{courierContNo}")
+	    public ResponseEntity<?> deleteContract(
+	            @PathVariable String courierContNo,
 	            @RequestParam(required = false) Double fromMonthlyAmt,
 	            @RequestParam(required = false) Double toMonthlyAmt,
 	            HttpServletRequest httpRequest) {
 
 	        // Pass the additional parameters to the service method
-	        return mstCourierContractService.deleteContract(
-	                courierContNo, fromWtGms, toWtGms, fromDistanceKm, toDistanceKm, fromMonthlyAmt, toMonthlyAmt, httpRequest);
+	        return mstCourierContractService.deleteContractdiscount(
+	                courierContNo, fromMonthlyAmt, toMonthlyAmt, httpRequest);
 	    }
 
+	    
+
+	    @PutMapping("/update-rate/{courierContNo}")
+	    public ResponseEntity<?> updateCourierRate( @PathVariable String courierContNo,
+	    		@RequestBody MstCourierContractRate updatedRate,
+	    		   @RequestParam(required = false) Double fromWtGms,
+		            @RequestParam(required = false) Double toWtGms,
+		            @RequestParam(required = false) Double fromDistanceKm,
+		            @RequestParam(required = false) Double toDistanceKm,
+	    		HttpServletRequest httpRequest) {
+	    	mstCourierContractService.updateCourierRateFields(courierContNo,updatedRate,fromWtGms,toWtGms,fromDistanceKm,toDistanceKm,httpRequest);
+	      //  StatusCodeModal statusCodeModal = new StatusCodeModal();
+//
+//	        statusCodeModal.setStatus_code(HttpStatus.OK.value());
+//            statusCodeModal.setStatus("contract rate successfully.");
+	    	  try {
+	    	        // Update logic here
+	    	        return ResponseEntity.ok()
+	    	            .contentType(MediaType.APPLICATION_JSON)
+	    	            .body(Map.of("status", "Rate updated successfully.", "status_code", 200));
+	    	    } catch (Exception e) {
+	    	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+	    	            .contentType(MediaType.APPLICATION_JSON)
+	    	            .body(Map.of("error", e.getMessage()));
+	    	    }
+	    }
+
+	    @PutMapping("/update-discount/{courierContNo}")
+	    public ResponseEntity<?> updateCourierDiscount( @PathVariable String courierContNo,
+	            @RequestParam(required = false) Double fromMonthlyAmt,
+	            @RequestParam(required = false) Double toMonthlyAmt,
+	            @RequestBody MstCourierContractDiscount updatedDiscount,
+	            HttpServletRequest httpRequest) {
+	    	mstCourierContractService.updateCourierDiscountFields(courierContNo,fromMonthlyAmt,toMonthlyAmt,updatedDiscount,httpRequest);
+	    	  try {
+	    	        // Update logic here
+	    	        return ResponseEntity.ok()
+	    	            .contentType(MediaType.APPLICATION_JSON)
+	    	            .body(Map.of("status", "discount updated successfully.", "status_code", 200));
+	    	    } catch (Exception e) {
+	    	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+	    	            .contentType(MediaType.APPLICATION_JSON)
+	    	            .body(Map.of("error", e.getMessage()));
+	    	    }	    }
 	    
 	}
  

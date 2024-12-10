@@ -341,55 +341,48 @@ public class TrnParcelInService {
                 MstEmployee recipientEmployee = recipientEmployeeOpt.get();
                 logger.info("Recipient Employee Details: {}", recipientEmployee);
 
-//                String email = recipientEmployee.getEmailId();  // Fetch email from employee details
-           String email = "hbaishya@indianoil.in";
-           //     String email = "kilugusai2001@gmail.com";
-//                String name = recipientEmployee.getEmpName();
-                logger.info("Sending email to: {}-Debug", email);                
-                // Call sendEmail method
+                String email = recipientEmployee.getEmailId();  // Fetch email from employee details
+                String name = recipientEmployee.getEmpName(); 
                 logger.info("Calling sendEmail method...Debug");  // Log before sending email
-                if (email != null) {
-                	  System.out.println("Sending email to: Debug Hemanta" + email);  // Debug statement
-                   //  TenderMitra email template   	
-               	  String subject = "Despatch-Parking of tenders 3 days";
-//                      String tref = "T12345";  // Placeholder for tender reference number
-//                      String tdesc = "Supply of Goods";  // Placeholder for tender description
-//                      String sub_date = "15-09-2024";  // Placeholder for submission date
-//                      Date parkingDate = new Date();  // Current date as parking date
-//                      String rema = "Please resubmit missing documents.";  // Placeholder for remarks
 
-                      String body = "<html><body>The following despatch initiated in TenderMitra has been parked.<br>"
-//                          + "<table border='1'><tr><td>Reference no</td><td>" + tref + "</td></tr>"
-//                          + "<tr><td>Description</td><td>" + tdesc + "</td></tr>"
-//                          + "<tr><td>Date of Submission</td><td>" + sub_date + "</td></tr>"
-//                          + "<tr><td>Date of Parking</td><td>" + new SimpleDateFormat("dd-MM-yyyy").format(parkingDate) + "</td></tr>"
-//                          + "<tr><td>Remark</td><td>" + rema + "</td></tr>"
-//                          + "</table><br>"
-//                          + "Please resubmit with required documents/clarifications. If parked for 10 days, the tender will be auto-rejected by the system.<br>"
-//                          + "Pl. visit https://webapp.indianoil.co.in/Mitra for further details.<br>"
-//                          + "<br>*** This is an automatically generated email, please do not reply ***"
-//                        + "</body></html>" 
-                    		  ;
+              if (email != null) {                	
 
-                      // snSendEMail call
-                      String from = "Despatch@indianoil.in";
-                      String to = email;
-                      String cc = " ";
-                      String bcc = "";
+              	String subject = "Parcel Notification";
 
-                      System.out.println("Calling sendEmail method");  // Debug statement
-                      emailService.sendEmail(from, to, cc, bcc, subject, body);
-                  }
-            }
+              	String messageBody = "<p>Dear " + name + ",</p>" +
 
-            statusCodeModal.setStatus_code(HttpStatus.CREATED.value());
-            statusCodeModal.setStatus("Parcel created successfully with id: " + createdParcel.getConsignmentNumber());
-            return ResponseEntity.status(HttpStatus.CREATED).body(statusCodeModal);
-        } else {
-            statusCodeModal.setStatus_code(HttpStatus.BAD_REQUEST.value());
-            statusCodeModal.setStatus("Failed to create parcel. Please try again.");
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(statusCodeModal);
-        }
+                          "<p>You have received a new parcel with Tracking ID: " + createdParcel.getConsignmentNumber() + ".</p>" +
+
+                          "<p>Please find the details in the attached PDF.</p>" +
+
+                          "<p>Best regards,<br>" +
+
+                          "Indian Oil Corporation Limited</p>";
+
+               //   emailService.sendEmail(email, subject, messageBody, pdfBytes);
+
+                 // emailService.sendEmail(email, "Parcel Notification", "You have received a new parcel with Tracking ID: " + createdParcel.getConsignmentNumber(), pdfBytes);
+
+              }
+
+                         }
+
+          statusCodeModal.setStatus_code(HttpStatus.CREATED.value());
+
+          statusCodeModal.setStatus("Parcel created successfully with id: " + createdParcel.getConsignmentNumber());
+
+          return ResponseEntity.status(HttpStatus.CREATED).body(statusCodeModal);
+
+      } else {
+
+          statusCodeModal.setStatus_code(HttpStatus.BAD_REQUEST.value());
+
+          statusCodeModal.setStatus("Failed to create parcel. Please try again.");
+
+          return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(statusCodeModal);
+
+      }
+
     }
 
 

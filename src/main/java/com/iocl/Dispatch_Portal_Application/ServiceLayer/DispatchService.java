@@ -214,7 +214,7 @@ public class DispatchService {
                     }
                 } else {
                     logger.warn("Invalid OTP '{}' provided for user ID: {}", otp, user.getUserId());
-                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid OTP");
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid OTP");
                 }
             } else {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Invalid Employee Code For User");

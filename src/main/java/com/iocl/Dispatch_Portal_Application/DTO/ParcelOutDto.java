@@ -27,6 +27,7 @@ public class ParcelOutDto {
     private String createdBy;
     private LocalDate createdDate;
     private LocalDateTime LastUpdatedDate;
+    private Double distance;
     
     private String formattedrecLocation;  // For frontend display
 
@@ -54,6 +55,7 @@ public class ParcelOutDto {
         parcelOut.setCreatedBy(this.createdBy);
         parcelOut.setCreatedDate(this.createdDate);
         parcelOut.setLastUpdatedDate(this.LastUpdatedDate);
+        parcelOut.setDistance(this.distance);
         return parcelOut;
     }
 }

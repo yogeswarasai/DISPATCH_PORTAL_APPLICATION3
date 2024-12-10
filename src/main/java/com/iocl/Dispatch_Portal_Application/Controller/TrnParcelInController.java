@@ -25,6 +25,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.iocl.Dispatch_Portal_Application.DTO.ParcelInDto;
 import com.iocl.Dispatch_Portal_Application.Entity.TrnParcelIn;
+import com.iocl.Dispatch_Portal_Application.Repositaries.TrnParcelInRepository;
+import com.iocl.Dispatch_Portal_Application.Repositaries.TrnParcelOutRepository;
 import com.iocl.Dispatch_Portal_Application.Security.JwtUtils;
 import com.iocl.Dispatch_Portal_Application.ServiceLayer.EmployeeService;
 import com.iocl.Dispatch_Portal_Application.ServiceLayer.TrnParcelInService;
@@ -37,6 +39,9 @@ public class TrnParcelInController {
 
 	 @Autowired
 	    private TrnParcelInService trnParcelInService;
+	 @Autowired
+	 private TrnParcelInRepository trnParcelInRepository;
+	 
 	 @Autowired
 	    private JwtUtils jwtUtils;
 	   
@@ -73,7 +78,15 @@ public class TrnParcelInController {
 //	       
 //	        return ResponseEntity.ok(parcels);
 //	    }
+	    
+	    
 //	
+	    @GetMapping("/consignment/{number}/exists")
+	    public ResponseEntity<Boolean> checkConsignmentExists(@PathVariable String number) {
+	        boolean exists = trnParcelInRepository.existsByConsignmentNumber(number);
+	        return ResponseEntity.ok(exists);
+	    }
+
 	    
 	    @GetMapping("/get-in-parcelsbyloccode")
 	    public ResponseEntity<Page<ParcelInDto>> getParcelsByLocationCode(
