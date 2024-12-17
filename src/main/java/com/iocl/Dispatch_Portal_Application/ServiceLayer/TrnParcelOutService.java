@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -19,12 +20,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import com.iocl.Dispatch_Portal_Application.DTO.ParcelInDto;
 import com.iocl.Dispatch_Portal_Application.DTO.ParcelOutDto;
 import com.iocl.Dispatch_Portal_Application.DTO.ParcelOutResponse;
 import com.iocl.Dispatch_Portal_Application.Entity.MstEmployee;
 import com.iocl.Dispatch_Portal_Application.Entity.MstUser;
-import com.iocl.Dispatch_Portal_Application.Entity.TrnParcelIn;
 import com.iocl.Dispatch_Portal_Application.Entity.TrnParcelOut;
 import com.iocl.Dispatch_Portal_Application.Repositaries.EmployeeRepository;
 import com.iocl.Dispatch_Portal_Application.Repositaries.MstUserRepository;
@@ -593,23 +592,40 @@ public class TrnParcelOutService {
 
 		    }
 		 
+//		 public Double getDistance(String recipientLocCode, HttpServletRequest request) {
+//			    String token = jwtUtils.getJwtFromCookies(request);
+//
+//		        // Validate and extract information from the JWT token
+//		        String senderLocCode = jwtUtils.getLocCodeFromJwtToken(token);
+//			    logger.info("Fetching distance for senderLocCode: {} and recipientLocCode: {}", senderLocCode, request);
+//			    Double distance = trnParcelOutRepository.findDistanceBySenderAndRecipientNative(senderLocCode, recipientLocCode);
+//			    logger.debug("Query result: {}", distance);
+//			    
+//			    if (distance == null) {
+//			        logger.warn("No distance found for senderLocCode: {} and recipientLocCode: {}", senderLocCode, request);
+//			        return 0.0;
+//			    }
+//			    
+//			    logger.info("Distance retrieved successfully: {}", distance);
+//			    return distance;
+//			}
+		 
 		 public Double getDistance(String recipientLocCode, HttpServletRequest request) {
 			    String token = jwtUtils.getJwtFromCookies(request);
+			    String senderLocCode = jwtUtils.getLocCodeFromJwtToken(token);
 
-		        // Validate and extract information from the JWT token
-		        String senderLocCode = jwtUtils.getLocCodeFromJwtToken(token);
-			    logger.info("Fetching distance for senderLocCode: {} and recipientLocCode: {}", senderLocCode, request);
-			    Double distance = trnParcelOutRepository.findDistanceBySenderAndRecipientNative(senderLocCode, recipientLocCode);
-			    logger.debug("Query result: {}", distance);
-			    
-			    if (distance == null) {
-			        logger.warn("No distance found for senderLocCode: {} and recipientLocCode: {}", senderLocCode, request);
+			    List<TrnParcelOut> distances = trnParcelOutRepository.findAllDistances(senderLocCode, recipientLocCode);
+
+			    if (distances.isEmpty()) {
+			        logger.warn("No distances found for senderLocCode: {} and recipientLocCode: {}", senderLocCode, recipientLocCode);
 			        return 0.0;
 			    }
-			    
-			    logger.info("Distance retrieved successfully: {}", distance);
-			    return distance;
+
+			    TrnParcelOut oldestEntry = distances.get(0); // The first one due to ORDER BY ASC
+			    return oldestEntry.getDistance();
 			}
+
+
 
 	}
 

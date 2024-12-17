@@ -14,6 +14,7 @@ public class MstUserDTO {
 	    private String userId;
 	    private String userName;
 	    private Long mobileNumber;
+	    private String password;
 	    private String roleId;
 	    private String status = "A";
 	    private String createdBy;
@@ -28,6 +29,7 @@ public class MstUserDTO {
 	    	 mstuser.setUserId(this.userId);
 	    	 mstuser.setUserName(this.userName);
 	    	 mstuser.setMobileNumber(this.mobileNumber);
+	    	 mstuser.setPassword(this.password);
 	    	 mstuser.setRoleId(this.roleId);
 	    	 mstuser.setStatus(this.status);
 	    	 mstuser.setCreatedBy(this.createdBy);

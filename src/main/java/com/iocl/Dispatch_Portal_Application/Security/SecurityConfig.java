@@ -29,6 +29,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     public AuthTokenFilter authenticationJwtTokenFilter() {
         return new AuthTokenFilter();
     }
+    
+  
 
     @Bean
     public ModelMapper modelMapper() {
@@ -72,7 +74,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .exceptionHandling().authenticationEntryPoint(unauthorizedHandler).and()
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
                .authorizeRequests()
-                .antMatchers("/api/v1/employee/**","/roles/**","/users/**","/api/v1/dispatch/**","/parcels-in/**","/parcels-out/**","/api/menus/**","/sequences/**","api/courier-contracts").permitAll()
+                .antMatchers("/swagger-ui/**",
+                	    "/swagger-ui.html",
+                	    "/v3/api-docs/**","/api/v1/employee/**","/roles/**","/users/**","/api/v1/dispatch/**","/parcels-in/**","/parcels-out/**","/api/menus/**","/sequences/**","api/courier-contracts").permitAll()
          //       .antMatchers("/api/v1/dispatch/**").hasRole("DISPATCH")
                 .anyRequest()
                 .authenticated();

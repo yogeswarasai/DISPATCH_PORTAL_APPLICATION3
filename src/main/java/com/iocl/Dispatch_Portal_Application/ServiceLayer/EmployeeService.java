@@ -260,9 +260,7 @@ public class EmployeeService {
         String password = loginRequest.getPassword();
 
         Hashtable<String, String> env = new Hashtable<>();
-        env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
-        env.put(Context.PROVIDER_URL, "LDAP://dcmkho03:389 LDAP://dcmkho1:389 LDAP://dcmkho2:389");
-        env.put(Context.SECURITY_AUTHENTICATION, "DIGEST-MD5");
+      
         env.put(Context.SECURITY_PRINCIPAL, username);
         env.put(Context.SECURITY_CREDENTIALS, password);
 

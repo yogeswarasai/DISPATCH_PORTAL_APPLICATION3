@@ -29,7 +29,12 @@ import com.iocl.Dispatch_Portal_Application.Entity.MstCourierContractDiscount;
 import com.iocl.Dispatch_Portal_Application.Entity.MstCourierContractRate;
 import com.iocl.Dispatch_Portal_Application.Repositaries.MstCourierContractDiscountRepository;
 import com.iocl.Dispatch_Portal_Application.Repositaries.MstCourierContractRateRepository;
+import com.iocl.Dispatch_Portal_Application.Repositaries.MstCourierContractRepository;
+import com.iocl.Dispatch_Portal_Application.Security.JwtUtils;
 import com.iocl.Dispatch_Portal_Application.ServiceLayer.MstCourierContractService;
+import com.iocl.Dispatch_Portal_Application.composite_pk.CourierContractId;
+import com.iocl.Dispatch_Portal_Application.composite_pk.MstCourierContractPK;
+import com.iocl.Dispatch_Portal_Application.composite_pk.MstCourierPK;
 import com.iocl.Dispatch_Portal_Application.modal.StatusCodeModal;
 
 @RestController
@@ -42,7 +47,10 @@ public class MstCourierContractController {
 	private MstCourierContractDiscountRepository mstCourierContractDiscountRepository;
 	@Autowired
 	 private MstCourierContractRateRepository mstCourierContractRateRepository;
-	 
+	@Autowired
+	private JwtUtils jwtUtils;
+	@Autowired
+	private MstCourierContractRepository mstCourierContractRepository;
 	    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(MstCourierContractController.class);
 
 	
@@ -50,6 +58,24 @@ public class MstCourierContractController {
 	        this.mstCourierContractService = mstCourierContractService;
 	    }
   
+	   @GetMapping("/courierContNo/{courierContNo}/exists")
+		 public ResponseEntity<Boolean> checkCourierCodeExists(
+		         @PathVariable String courierContNo,HttpServletRequest request
+		        ) {
+			  String token = jwtUtils.getJwtFromCookies(request);
+
+		        // Validate and extract information from the JWT token
+		        String locCode = jwtUtils.getLocCodeFromJwtToken(token);
+		     // Construct the composite primary key
+		        CourierContractId primaryKey = new CourierContractId();
+		     primaryKey.setCourierContNo(courierContNo);
+		     primaryKey.setLocCode(locCode);
+
+		     // Check if the record exists using the composite key
+		     boolean exists = mstCourierContractRepository.existsById(primaryKey);
+
+		     return ResponseEntity.ok(exists);
+		 }
 	   
 	   @PostMapping
 	    public ResponseEntity<?> createCourierContract(@RequestBody CourierContractDto courierContractDto, HttpServletRequest request) {

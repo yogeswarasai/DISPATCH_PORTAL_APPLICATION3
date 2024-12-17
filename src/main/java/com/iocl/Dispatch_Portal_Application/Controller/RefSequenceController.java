@@ -1,10 +1,11 @@
 package com.iocl.Dispatch_Portal_Application.Controller;
 
-import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -42,6 +43,12 @@ public class RefSequenceController {
 //	    }
 
 	 
+	    @GetMapping("/locCode/{locCode}/exists")
+	    public ResponseEntity<Boolean> checkConsignmentExists(@PathVariable String locCode) {
+	        boolean exists = refSequenceRepository.existsByLocCode(locCode);
+	        return ResponseEntity.ok(exists);
+	    } 
+	 
 	 @GetMapping
 	    public Page<RefSequence> getAllSequences(
 	        @RequestParam(defaultValue = "0") int page,
@@ -49,6 +56,9 @@ public class RefSequenceController {
 	    ) {
 	        return refSequenceService.findAll(page, size);
 	    }
+	 
+	
+	 
 	    @GetMapping("/{locCode}")
 	    public ResponseEntity<RefSequence> getSequenceById(@PathVariable String locCode) {
 	        Optional<RefSequence> sequence = refSequenceService.findById(locCode);

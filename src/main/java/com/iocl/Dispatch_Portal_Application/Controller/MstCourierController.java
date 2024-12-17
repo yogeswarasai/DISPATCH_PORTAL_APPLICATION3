@@ -15,12 +15,15 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.iocl.Dispatch_Portal_Application.DTO.MstCourierDto;
 import com.iocl.Dispatch_Portal_Application.Entity.MstCourier;
+import com.iocl.Dispatch_Portal_Application.Repositaries.MstCourierRepository;
 import com.iocl.Dispatch_Portal_Application.Security.JwtUtils;
 import com.iocl.Dispatch_Portal_Application.ServiceLayer.MstCourierService;
+import com.iocl.Dispatch_Portal_Application.composite_pk.MstCourierPK;
 import com.iocl.Dispatch_Portal_Application.modal.StatusCodeModal;
 
 
@@ -31,9 +34,30 @@ public class MstCourierController {
 	
 	@Autowired
     private MstCourierService mstCourierService;
+	@Autowired
+    private MstCourierRepository mstCourierrepositary;
 
 	 @Autowired
 	    private JwtUtils jwtUtils;
+	 
+	 @GetMapping("/courierCode/{courierCode}/exists")
+	 public ResponseEntity<Boolean> checkCourierCodeExists(
+	         @PathVariable String courierCode,HttpServletRequest request
+	        ) {
+		  String token = jwtUtils.getJwtFromCookies(request);
+
+	        // Validate and extract information from the JWT token
+	        String locCode = jwtUtils.getLocCodeFromJwtToken(token);
+	     // Construct the composite primary key
+	     MstCourierPK primaryKey = new MstCourierPK();
+	     primaryKey.setCourierCode(courierCode);
+	     primaryKey.setLocCode(locCode);
+
+	     // Check if the record exists using the composite key
+	     boolean exists = mstCourierrepositary.existsById(primaryKey);
+
+	     return ResponseEntity.ok(exists);
+	 }
 
 	
  @PostMapping

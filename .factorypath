@@ -98,6 +98,16 @@
     <factorypathentry kind="VARJAR" id="M2_REPO/com/sun/mail/jakarta.mail/1.6.7/jakarta.mail-1.6.7.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/com/sun/activation/jakarta.activation/1.2.2/jakarta.activation-1.2.2.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="EXTJAR" id="D:\Coding dispatch\DISPATCH_PORTAL_APPLICATION3\libs\snLibrary.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/org/springdoc/springdoc-openapi-ui/1.6.15/springdoc-openapi-ui-1.6.15.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/org/springdoc/springdoc-openapi-webmvc-core/1.6.15/springdoc-openapi-webmvc-core-1.6.15.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/org/springdoc/springdoc-openapi-common/1.6.15/springdoc-openapi-common-1.6.15.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/io/swagger/core/v3/swagger-core/2.2.8/swagger-core-2.2.8.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/com/fasterxml/jackson/dataformat/jackson-dataformat-yaml/2.13.1/jackson-dataformat-yaml-2.13.1.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/io/swagger/core/v3/swagger-annotations/2.2.8/swagger-annotations-2.2.8.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/io/swagger/core/v3/swagger-models/2.2.8/swagger-models-2.2.8.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/org/webjars/swagger-ui/4.17.1/swagger-ui-4.17.1.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/org/webjars/webjars-locator-core/0.48/webjars-locator-core-0.48.jar" enabled="true" runInBatchMode="false"/>
+    <factorypathentry kind="VARJAR" id="M2_REPO/io/github/classgraph/classgraph/4.8.149/classgraph-4.8.149.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="EXTJAR" id="D:\Coding dispatch\DISPATCH_PORTAL_APPLICATION3\libs\webservices-api-osgi.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/commons-dbcp/commons-dbcp/1.4/commons-dbcp-1.4.jar" enabled="true" runInBatchMode="false"/>
     <factorypathentry kind="VARJAR" id="M2_REPO/commons-pool/commons-pool/1.6/commons-pool-1.6.jar" enabled="true" runInBatchMode="false"/>

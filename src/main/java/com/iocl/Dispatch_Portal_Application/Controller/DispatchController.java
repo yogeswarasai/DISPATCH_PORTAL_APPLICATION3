@@ -1,54 +1,30 @@
 package com.iocl.Dispatch_Portal_Application.Controller;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URISyntaxException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.format.annotation.DateTimeFormat;
-
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.http.MediaType;
-import org.springframework.http.ContentDisposition;
-import com.itextpdf.text.*;
-import com.itextpdf.text.pdf.PdfPCell;
-import com.itextpdf.text.pdf.PdfPTable;
-import com.itextpdf.text.pdf.PdfWriter;
-import org.springframework.http.*;
-import org.springframework.web.bind.annotation.*;
+import java.lang.reflect.Field;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
-import java.io.ByteArrayOutputStream;
-import java.time.LocalDate;
-import java.util.List;
-import java.io.ByteArrayOutputStream;
-import java.time.LocalDate;
-import java.util.List;
-import javax.servlet.http.HttpServletRequest;
-
-import javax.servlet.http.HttpServletRequest;
-import java.io.ByteArrayOutputStream;
-import java.time.LocalDate;
-import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.VerticalAlignment;
+import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -63,19 +39,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
-import java.io.OutputStream;
-import java.lang.reflect.Field;
 
 import com.iocl.Dispatch_Portal_Application.DTO.ParcelInDto;
 import com.iocl.Dispatch_Portal_Application.DTO.ParcelOutDto;
-import com.iocl.Dispatch_Portal_Application.Entity.MstCourier;
 import com.iocl.Dispatch_Portal_Application.Entity.MstDepartment;
-import com.iocl.Dispatch_Portal_Application.Entity.MstEmployee;
-import com.iocl.Dispatch_Portal_Application.Entity.TrnParcelIn;
-import com.iocl.Dispatch_Portal_Application.Entity.TrnParcelOut;
 import com.iocl.Dispatch_Portal_Application.Security.JwtUtils;
 import com.iocl.Dispatch_Portal_Application.ServiceLayer.CustomFooter;
 import com.iocl.Dispatch_Portal_Application.ServiceLayer.DispatchService;
@@ -86,16 +58,18 @@ import com.iocl.Dispatch_Portal_Application.ServiceLayer.MstLocationService;
 import com.iocl.Dispatch_Portal_Application.ServiceLayer.TrnParcelCountService;
 import com.iocl.Dispatch_Portal_Application.ServiceLayer.TrnParcelInService;
 import com.iocl.Dispatch_Portal_Application.ServiceLayer.TrnParcelOutService;
-import com.itextpdf.text.DocumentException;
-
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.util.CellRangeAddress;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.Font;
+import com.iocl.Dispatch_Portal_Application.modal.CaptchaResponseData;
+import com.iocl.Dispatch_Portal_Application.modal.EmployeeLoginModal;
+import com.itextpdf.text.BaseColor;
+import com.itextpdf.text.Document;
+import com.itextpdf.text.Element;
+import com.itextpdf.text.FontFactory;
+import com.itextpdf.text.PageSize;
+import com.itextpdf.text.Paragraph;
+import com.itextpdf.text.Phrase;
+import com.itextpdf.text.pdf.PdfPCell;
+import com.itextpdf.text.pdf.PdfPTable;
+import com.itextpdf.text.pdf.PdfWriter;
 
 @RestController
 @RequestMapping("/api/v1/dispatch")
@@ -148,6 +122,18 @@ public class DispatchController {
         return dispatchService.verifyOtpAndGenerateJwt(mobileNumber, otp, httpresponse);
 
     }
+    
+    
+    @PostMapping("/signin")
+    public ResponseEntity<?> authenticateUser(@RequestBody EmployeeLoginModal loginRequest,HttpServletResponse response) throws Exception {
+        return dispatchService.login(loginRequest,response);
+    }
+    
+    @GetMapping("/get-captcha")
+    public @ResponseBody ResponseEntity<CaptchaResponseData> getCaptcha() throws IOException {
+        return employeeService.getCaptcha();
+    }
+
 
     @PostMapping("/logout")
     public ResponseEntity<?> logout() {
@@ -233,19 +219,203 @@ public class DispatchController {
    
 
     
+//    @GetMapping("/history/all")
+//    public ResponseEntity<?> getDispatchHistory(
+//            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+//            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
+//            @RequestParam String type,
+//            @RequestParam(defaultValue = "false") boolean exportPdf,
+//            @RequestParam(defaultValue = "false") boolean exportExcel,
+//            @RequestParam(required = false) String senderLocCode,
+//            @RequestParam(required = false) String senderDepartment,
+//            @RequestParam(required = false) String searchBy,
+//            HttpServletRequest request,
+//            HttpServletResponse response) {
+//    	
+//
+//        logger.info("Received request to fetch dispatch history. Type: {}, FromDate: {}, ToDate: {}, ExportPdf: {}", type, fromDate, toDate, exportPdf);
+//
+//        String token = jwtUtils.getJwtFromCookies(request);
+//        String locCode = jwtUtils.getLocCodeFromJwtToken(token);
+//
+//        if (locCode == null) {
+//            logger.warn("Invalid token or locCode not found.");
+//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid token or locCode not found.");
+//        }
+//
+//        try {
+//
+//        	if ("in".equalsIgnoreCase(type)) {
+//        	    logger.info("Fetching IN dispatch history for locCode: {}", locCode);
+//        	    List<ParcelInDto> parcelsIn = trnparcelinService.findByDateRangeAndLocCode(fromDate, toDate, locCode);
+//
+//        	    // Log size before filtering
+//        	    logger.info("Retrieved {} parcels before filtering.", parcelsIn.size());
+//
+//        	    // Filter by senderLocCode
+//        	    if (senderLocCode != null) {
+//        	        logger.info("Applying filter: senderLocCode = {}", senderLocCode);
+//        	        parcelsIn = parcelsIn.stream()
+//        	                .filter(parcel -> senderLocCode.equalsIgnoreCase(parcel.getSenderLocCode()))
+//        	                .collect(Collectors.toList());
+//        	    }
+//
+//        	    // Filter by senderDepartment
+//        	    if (senderDepartment != null) {
+//        	        logger.info("Applying filter: senderDepartment = {}", senderDepartment);
+//        	        parcelsIn = parcelsIn.stream()
+//        	                .filter(parcel -> senderDepartment.equals(parcel.getSenderDepartment()))
+//        	                .collect(Collectors.toList());
+//        	    }
+//        	    
+//        	    if (searchBy != null && !searchBy.isBlank()) { 
+//        	        logger.info("Applying filter: searchBy = {}", searchBy);
+//
+//        	        String searchValue = searchBy.trim().toLowerCase();
+//
+//        	        // Filter for "in" type parcels
+//        	        if ("in".equalsIgnoreCase(type)) {
+//        	            parcelsIn = parcelsIn.stream()
+//        	                    .filter(parcel -> 
+//        	                            (parcel.getSenderLocCode() != null && parcel.getSenderLocCode().toLowerCase().contains(searchValue)) ||
+//        	                            (parcel.getSenderDepartment() != null && parcel.getSenderDepartment().toLowerCase().contains(searchValue)) ||
+//        	                            (parcel.getSenderName() != null && parcel.getSenderName().toLowerCase().contains(searchValue)) ||
+//        	                            (parcel.getRecipientDepartment() != null && parcel.getRecipientDepartment().toLowerCase().contains(searchValue)) ||
+//        	                            (parcel.getRecipientName() != null && parcel.getRecipientName().toLowerCase().contains(searchValue)) ||
+//        	                            (parcel.getConsignmentDate() != null && parcel.getConsignmentDate().toString().toLowerCase().contains(searchValue)) ||
+//        	                            (parcel.getConsignmentNumber() != null && parcel.getConsignmentNumber().toLowerCase().contains(searchValue)) ||
+//        	                            (parcel.getCourierName() != null && parcel.getCourierName().toLowerCase().contains(searchValue)) ||
+//        	                            (parcel.getCreatedDate() != null && parcel.getCreatedDate().toString().toLowerCase().contains(searchValue))
+//        	                    )
+//        	                    .collect(Collectors.toList());
+//        	        }
+//        	    }
+//
+//        	    
+//
+//        	    // Log size after filtering
+//        	    logger.info("Filtered parcels count: {}", parcelsIn.size());
+//
+//        	    // Log data being sent to PDF generation
+//        	    parcelsIn.forEach(parcel -> logger.info("Filtered Parcel Data: {}", parcel));
+//
+//        	    if (exportPdf) {
+//        	        logger.info("Generating PDF for filtered data...");
+//        	        generateInPdf(parcelsIn, response, fromDate, toDate, locCode);
+//        	        return ResponseEntity.ok().build();
+//        	    }
+//        	    
+//        	    try {
+//        	    	 response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+//        	            response.setHeader("Content-Disposition", "attachment; filename=dispatch_history_" + type + ".xlsx");
+//        	    	 if(exportExcel) {
+//        	    		 generateInExcel(parcelsIn, response, fromDate, toDate, locCode);
+//                  	 return ResponseEntity.ok().build();
+//                     }
+//        	    } catch (Exception e) {
+//        	        logger.error("Error generating Excel file", e);
+//        	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to generate Excel");
+//        	    }
+//
+//         
+//
+//        	    return ResponseEntity.ok(parcelsIn);
+//        	}
+//        	else if("out".equalsIgnoreCase(type)) {
+//        		
+//        		 List<ParcelOutDto> parcelsout = trnparceloutService.findByDateRangeAndLocCode(fromDate, toDate, locCode);
+//        		 logger.info("Retrieved {} parcels before filtering.", parcelsout.size());
+//
+//         	    // Filter by senderLocCode
+//         	    if (senderLocCode != null) {
+//         	        logger.info("Applying filter: senderLocCode = {}", senderLocCode);
+//         	       parcelsout = parcelsout.stream()
+//         	                .filter(parcel -> senderLocCode.equalsIgnoreCase(parcel.getSenderLocCode()))
+//         	                .collect(Collectors.toList());
+//         	    }
+//
+//         	    // Filter by senderDepartment
+//         	    if (senderDepartment != null) {
+//         	        logger.info("Applying filter: senderDepartment = {}", senderDepartment);
+//         	       parcelsout = parcelsout.stream()
+//         	                .filter(parcel -> senderDepartment.equals(parcel.getSenderDepartment()))
+//         	                .collect(Collectors.toList());
+//         	    }
+//         	    
+//
+//         	
+//         	    
+//         	   if (searchBy != null && !searchBy.isBlank()) {
+//         		    logger.info("Applying filter: searchBy = {}", searchBy);
+//
+//         		    String searchValue = searchBy.trim().toLowerCase();
+//
+//         		    // Filter for "out" type parcels
+//         		    if ("out".equalsIgnoreCase(type)) {
+//         		        parcelsout = parcelsout.stream()
+//         		                .filter(parcel -> 
+//         		                        (parcel.getSenderDepartment() != null && parcel.getSenderDepartment().toLowerCase().contains(searchValue)) ||
+//         		                        (parcel.getSenderName() != null && parcel.getSenderName().toLowerCase().contains(searchValue)) ||
+//         		                        (parcel.getRecipientLocCode() != null && parcel.getRecipientLocCode().toLowerCase().contains(searchValue)) ||
+//         		                        (parcel.getRecipientDepartment() != null && parcel.getRecipientDepartment().toLowerCase().contains(searchValue)) ||
+//         		                        (parcel.getRecipientName() != null && parcel.getRecipientName().toLowerCase().contains(searchValue)) ||
+//         		                        (parcel.getConsignmentDate() != null && parcel.getConsignmentDate().toString().toLowerCase().contains(searchValue)) ||
+//         		                        (parcel.getConsignmentNumber() != null && parcel.getConsignmentNumber().toLowerCase().contains(searchValue)) ||
+//         		                        (parcel.getCourierName() != null && parcel.getCourierName().toLowerCase().contains(searchValue)) ||
+//         		                        (parcel.getWeight() != null && parcel.getWeight().toString().contains(searchValue)) || // Convert to string for numeric fields
+//         		                        (parcel.getDistance() != null && parcel.getDistance().toString().contains(searchValue)) || // Convert to string for numeric fields
+//         		                        (parcel.getCreatedDate() != null && parcel.getCreatedDate().toString().toLowerCase().contains(searchValue))
+//         		                )
+//         		                .collect(Collectors.toList());
+//         		    }
+//         		}
+//
+//         	    
+//         	  
+//
+//         	
+//         	    // Log data being sent to PDF generation
+//         	   parcelsout.forEach(parcel -> logger.info("Filtered Parcel Data: {}", parcel));
+//
+//         	    if (exportPdf) {
+//         	        logger.info("Generating PDF for filtered data...");
+//         	       generateOutPdf(parcelsout, response, fromDate, toDate, locCode);
+//         	        return ResponseEntity.ok().build();
+//         	    }
+//         	   if(exportExcel) {
+//         		  generateOutExcel(parcelsout, response, fromDate, toDate, locCode);
+//            	   return ResponseEntity.ok().build();
+//               }
+//
+//         	    return ResponseEntity.ok(parcelsout);
+//        	}
+//        
+//        
+//        	else {
+//                logger.warn("Invalid parcel type received: {}", type);
+//                return ResponseEntity.badRequest().body("Invalid parcel type. Must be 'in' or 'out'.");
+//            }
+//        } catch (Exception e) {
+//            logger.error("An error occurred while fetching dispatch history: {}", e.getMessage(), e);
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred: " + e.getMessage());
+//        }
+//    }
+//
+//  
     @GetMapping("/history/all")
     public ResponseEntity<?> getDispatchHistory(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
             @RequestParam String type,
             @RequestParam(defaultValue = "false") boolean exportPdf,
-    @RequestParam(defaultValue = "false") boolean exportExcel,
+            @RequestParam(defaultValue = "false") boolean exportExcel,
             @RequestParam(required = false) String senderLocCode,
             @RequestParam(required = false) String senderDepartment,
-            @RequestParam(required = false) String consignmentNumber,
+            @RequestParam(required = false) String searchBy,
+            @RequestParam(required = false) String sortBy,
+            @RequestParam(defaultValue = "asc") String sortOrder,
             HttpServletRequest request,
             HttpServletResponse response) {
-    	
 
         logger.info("Received request to fetch dispatch history. Type: {}, FromDate: {}, ToDate: {}, ExportPdf: {}", type, fromDate, toDate, exportPdf);
 
@@ -259,115 +429,327 @@ public class DispatchController {
 
         try {
 
-        	if ("in".equalsIgnoreCase(type)) {
-        	    logger.info("Fetching IN dispatch history for locCode: {}", locCode);
-        	    List<ParcelInDto> parcelsIn = trnparcelinService.findByDateRangeAndLocCode(fromDate, toDate, locCode);
+            if ("in".equalsIgnoreCase(type)) {
+                logger.info("Fetching IN dispatch history for locCode: {}", locCode);
+                List<ParcelInDto> parcelsIn = trnparcelinService.findByDateRangeAndLocCode(fromDate, toDate, locCode);
 
-        	    // Log size before filtering
-        	    logger.info("Retrieved {} parcels before filtering.", parcelsIn.size());
+                logger.info("Retrieved {} parcels before filtering.", parcelsIn.size());
 
-        	    // Filter by senderLocCode
-        	    if (senderLocCode != null) {
-        	        logger.info("Applying filter: senderLocCode = {}", senderLocCode);
-        	        parcelsIn = parcelsIn.stream()
-        	                .filter(parcel -> senderLocCode.equalsIgnoreCase(parcel.getSenderLocCode()))
-        	                .collect(Collectors.toList());
-        	    }
+                if (senderLocCode != null) {
+                    logger.info("Applying filter: senderLocCode = {}", senderLocCode);
+                    parcelsIn = parcelsIn.stream()
+                            .filter(parcel -> senderLocCode.equalsIgnoreCase(parcel.getSenderLocCode()))
+                            .collect(Collectors.toList());
+                }
 
-        	    // Filter by senderDepartment
-        	    if (senderDepartment != null) {
-        	        logger.info("Applying filter: senderDepartment = {}", senderDepartment);
-        	        parcelsIn = parcelsIn.stream()
-        	                .filter(parcel -> senderDepartment.equals(parcel.getSenderDepartment()))
-        	                .collect(Collectors.toList());
-        	    }
-        	    
-        	    if(consignmentNumber !=null) {
-        	    	
-        	    	parcelsIn = parcelsIn.stream()
-        	                .filter(parcel -> consignmentNumber.equalsIgnoreCase(parcel.getConsignmentNumber()))
-        	                .collect(Collectors.toList());
-        	    	
-        	    }
-        	    // Log size after filtering
-        	    logger.info("Filtered parcels count: {}", parcelsIn.size());
+                if (senderDepartment != null) {
+                    logger.info("Applying filter: senderDepartment = {}", senderDepartment);
+                    parcelsIn = parcelsIn.stream()
+                            .filter(parcel -> senderDepartment.equals(parcel.getSenderDepartment()))
+                            .collect(Collectors.toList());
+                }
 
-        	    // Log data being sent to PDF generation
-        	    parcelsIn.forEach(parcel -> logger.info("Filtered Parcel Data: {}", parcel));
+                if (searchBy != null && !searchBy.isBlank()) {
+                    logger.info("Applying filter: searchBy = {}", searchBy);
 
-        	    if (exportPdf) {
-        	        logger.info("Generating PDF for filtered data...");
-        	        generateInPdf(parcelsIn, response, fromDate, toDate, locCode);
-        	        return ResponseEntity.ok().build();
-        	    }
-        	    
-        	    try {
-        	    	 response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-        	            response.setHeader("Content-Disposition", "attachment; filename=dispatch_history_" + type + ".xlsx");
-        	    	 if(exportExcel) {
-        	    		 generateInExcel(parcelsIn, response, fromDate, toDate, locCode);
-                  	 return ResponseEntity.ok().build();
-                     }
-        	    } catch (Exception e) {
-        	        logger.error("Error generating Excel file", e);
-        	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to generate Excel");
-        	    }
+                    String searchValue = searchBy.trim().toLowerCase();
 
-              
-    
+                    parcelsIn = parcelsIn.stream()
+                            .filter(parcel -> 
+                                    (parcel.getSenderLocCode() != null && parcel.getSenderLocCode().toLowerCase().contains(searchValue)) ||
+                                    (parcel.getSenderDepartment() != null && parcel.getSenderDepartment().toLowerCase().contains(searchValue)) ||
+                                    (parcel.getSenderName() != null && parcel.getSenderName().toLowerCase().contains(searchValue)) ||
+                                    (parcel.getRecipientDepartment() != null && parcel.getRecipientDepartment().toLowerCase().contains(searchValue)) ||
+                                    (parcel.getRecipientName() != null && parcel.getRecipientName().toLowerCase().contains(searchValue)) ||
+                                    (parcel.getConsignmentDate() != null && parcel.getConsignmentDate().toString().toLowerCase().contains(searchValue)) ||
+                                    (parcel.getConsignmentNumber() != null && parcel.getConsignmentNumber().toLowerCase().contains(searchValue)) ||
+                                    (parcel.getCourierName() != null && parcel.getCourierName().toLowerCase().contains(searchValue)) ||
+                                    (parcel.getCreatedDate() != null && parcel.getCreatedDate().toString().toLowerCase().contains(searchValue))
+                            )
+                            .collect(Collectors.toList());
+                }
 
-        	    return ResponseEntity.ok(parcelsIn);
-        	}
-        	else if("out".equalsIgnoreCase(type)) {
-        		
-        		 List<ParcelOutDto> parcelsout = trnparceloutService.findByDateRangeAndLocCode(fromDate, toDate, locCode);
-        		 logger.info("Retrieved {} parcels before filtering.", parcelsout.size());
+                // Apply sorting
+             // Sorting logic for "IN" parcels
+             // Apply sorting logic for "IN" parcels
+//                if (sortBy != null && !sortBy.isBlank()) {
+//                    logger.info("Applying sorting by field: {}", sortBy);
+//
+//                    parcelsIn.sort((p1, p2) -> {
+//                        int comparisonResult = 0;
+//
+//                        try {
+//                            // Primary sorting by the specified field in sortBy
+//                            Field field = p1.getClass().getDeclaredField(sortBy);
+//                            field.setAccessible(true);
+//                            Object value1 = field.get(p1);
+//                            Object value2 = field.get(p2);
+//
+//                            if (value1 instanceof Comparable && value2 instanceof Comparable) {
+//                                Comparable<Object> comp1 = (Comparable<Object>) value1;
+//                                Comparable<Object> comp2 = (Comparable<Object>) value2;
+//                                comparisonResult = "desc".equalsIgnoreCase(sortOrder) ? comp2.compareTo(comp1) : comp1.compareTo(comp2);
+//                            }
+//                        } catch (NoSuchFieldException | IllegalAccessException e) {
+//                            logger.error("Error during primary sorting by {}: {}", sortBy, e.getMessage());
+//                        }
+//
+//                        // Secondary sorting by senderLocCode if primary sorting results in a tie
+//                        if (comparisonResult == 0 && p1.getSenderLocCode() != null && p2.getSenderLocCode() != null) {
+//                            comparisonResult = "desc".equalsIgnoreCase(sortOrder)
+//                                    ? p2.getSenderLocCode().compareTo(p1.getSenderLocCode())
+//                                    : p1.getSenderLocCode().compareTo(p2.getSenderLocCode());
+//                        }
+//
+//                        // Tertiary sorting by senderDepartment if both primary and secondary sorting result in ties
+//                        if (comparisonResult == 0 && p1.getSenderDepartment() != null && p2.getSenderDepartment() != null) {
+//                            comparisonResult = "desc".equalsIgnoreCase(sortOrder)
+//                                    ? p2.getSenderDepartment().compareTo(p1.getSenderDepartment())
+//                                    : p1.getSenderDepartment().compareTo(p2.getSenderDepartment());
+//                        }
+//
+//                        if (comparisonResult == 0 && p1.getSenderName() != null && p2.getSenderName() != null) {
+//                            comparisonResult = "desc".equalsIgnoreCase(sortOrder)
+//                                    ? p2.getSenderName().compareTo(p1.getSenderName())
+//                                    : p1.getSenderName().compareTo(p2.getSenderName());
+//                        }
+//                        return comparisonResult;
+//                    });
+//                }
 
-         	    // Filter by senderLocCode
-         	    if (senderLocCode != null) {
-         	        logger.info("Applying filter: senderLocCode = {}", senderLocCode);
-         	       parcelsout = parcelsout.stream()
-         	                .filter(parcel -> senderLocCode.equalsIgnoreCase(parcel.getSenderLocCode()))
-         	                .collect(Collectors.toList());
-         	    }
+//                if (sortBy != null && !sortBy.isBlank()) {
+//                    logger.info("Applying sorting by field: {}", sortBy);
+//
+//                    parcelsIn.sort((p1, p2) -> {
+//                        int comparisonResult = 0;
+//
+//                        // Secondary sorting by senderLocCode
+//                        if (p1.getSenderLocCode() != null && p2.getSenderLocCode() != null) {
+//                            comparisonResult = "desc".equalsIgnoreCase(sortOrder)
+//                                    ? p2.getSenderLocCode().compareTo(p1.getSenderLocCode())
+//                                    : p1.getSenderLocCode().compareTo(p2.getSenderLocCode());
+//                        }
+//
+//                        // Tertiary sorting by senderDepartment if secondary sorting results in a tie
+//                        if (comparisonResult == 0 && p1.getSenderDepartment() != null && p2.getSenderDepartment() != null) {
+//                            comparisonResult = "desc".equalsIgnoreCase(sortOrder)
+//                                    ? p2.getSenderDepartment().compareTo(p1.getSenderDepartment())
+//                                    : p1.getSenderDepartment().compareTo(p2.getSenderDepartment());
+//                        }
+//
+//                        // Quaternary sorting by senderName if both secondary and tertiary sorting result in ties
+//                        if (comparisonResult == 0 && p1.getSenderName() != null && p2.getSenderName() != null) {
+//                            comparisonResult = "desc".equalsIgnoreCase(sortOrder)
+//                                    ? p2.getSenderName().compareTo(p1.getSenderName())
+//                                    : p1.getSenderName().compareTo(p2.getSenderName());
+//                        }
+//
+//                        // Primary sorting by the specified field in sortBy (applied last to maintain hierarchy)
+//                        if (comparisonResult == 0) {
+//                            try {
+//                                Field field = p1.getClass().getDeclaredField(sortBy);
+//                                field.setAccessible(true);
+//                                Object value1 = field.get(p1);
+//                                Object value2 = field.get(p2);
+//
+//                                if (value1 instanceof Comparable && value2 instanceof Comparable) {
+//                                    Comparable<Object> comp1 = (Comparable<Object>) value1;
+//                                    Comparable<Object> comp2 = (Comparable<Object>) value2;
+//                                    comparisonResult = "desc".equalsIgnoreCase(sortOrder) ? comp2.compareTo(comp1) : comp1.compareTo(comp2);
+//                                }
+//                            } catch (NoSuchFieldException | IllegalAccessException e) {
+//                                logger.error("Error during primary sorting by {}: {}", sortBy, e.getMessage());
+//                            }
+//                        }
+//
+//                        return comparisonResult;
+//                    });
+//                }
+//
+//      
 
-         	    // Filter by senderDepartment
-         	    if (senderDepartment != null) {
-         	        logger.info("Applying filter: senderDepartment = {}", senderDepartment);
-         	       parcelsout = parcelsout.stream()
-         	                .filter(parcel -> senderDepartment.equals(parcel.getSenderDepartment()))
-         	                .collect(Collectors.toList());
-         	    }
-         	    
-         	    if(consignmentNumber !=null) {
-         	    	
-         	    	parcelsout = parcelsout.stream()
-         	                .filter(parcel -> consignmentNumber.equalsIgnoreCase(parcel.getConsignmentNumber()))
-         	                .collect(Collectors.toList());
-         	    	
-         	    }
+                
+                if (sortBy != null && !sortBy.isBlank()) {
+                    logger.info("Applying sorting by field: {}", sortBy);
 
-         	    // Log size after filtering
-         	    logger.info("Filtered parcels count: {}", parcelsout.size());
+                    parcelsIn.sort((p1, p2) -> {
+                        int comparisonResult = 0;
 
-         	    // Log data being sent to PDF generation
-         	   parcelsout.forEach(parcel -> logger.info("Filtered Parcel Data: {}", parcel));
+                        // Sort only by senderLocCode
+                        if ("senderLocCode".equals(sortBy) && p1.getSenderLocCode() != null && p2.getSenderLocCode() != null) {
+                            comparisonResult = "desc".equalsIgnoreCase(sortOrder)
+                                    ? p2.getSenderLocCode().compareTo(p1.getSenderLocCode())
+                                    : p1.getSenderLocCode().compareTo(p2.getSenderLocCode());
+                        }
 
-         	    if (exportPdf) {
-         	        logger.info("Generating PDF for filtered data...");
-         	       generateOutPdf(parcelsout, response, fromDate, toDate, locCode);
-         	        return ResponseEntity.ok().build();
-         	    }
-         	   if(exportExcel) {
-         		  generateOutExcel(parcelsout, response, fromDate, toDate, locCode);
-            	   return ResponseEntity.ok().build();
-               }
+                        // Sort by senderDepartment within their respective locations
+                        else if ("senderDepartment".equals(sortBy)) {
+                            // First, sort by senderLocCode (if not null)
+                            comparisonResult = (p1.getSenderLocCode() != null && p2.getSenderLocCode() != null)
+                                    ? p1.getSenderLocCode().compareTo(p2.getSenderLocCode())
+                                    : 0;
 
-         	    return ResponseEntity.ok(parcelsout);
-        	}
-        
-        
-        	else {
+                            // Then, if senderLocCode is equal, sort by senderDepartment
+                            if (comparisonResult == 0 && p1.getSenderDepartment() != null && p2.getSenderDepartment() != null) {
+                                comparisonResult = "desc".equalsIgnoreCase(sortOrder)
+                                        ? p2.getSenderDepartment().compareTo(p1.getSenderDepartment())
+                                        : p1.getSenderDepartment().compareTo(p2.getSenderDepartment());
+                            }
+                        }
+
+                        // Sort by senderName within their respective location and department
+                        else if ("senderName".equals(sortBy)) {
+                            // First, group by location
+                            comparisonResult = (p1.getSenderLocCode() != null && p2.getSenderLocCode() != null)
+                                    ? p1.getSenderLocCode().compareTo(p2.getSenderLocCode())
+                                    : 0;
+
+                            // Then, group by department
+                            if (comparisonResult == 0 && p1.getSenderDepartment() != null && p2.getSenderDepartment() != null) {
+                                comparisonResult = p1.getSenderDepartment().compareTo(p2.getSenderDepartment());
+                            }
+
+                            // Finally, sort by name
+                            if (comparisonResult == 0 && p1.getSenderName() != null && p2.getSenderName() != null) {
+                                comparisonResult = "desc".equalsIgnoreCase(sortOrder)
+                                        ? p2.getSenderName().compareTo(p1.getSenderName())
+                                        : p1.getSenderName().compareTo(p2.getSenderName());
+                            }
+                        }
+
+                        return comparisonResult;
+                    });
+                }
+
+
+                // Log sorted list for debugging
+                logger.info("Sorted parcels count: {}", parcelsIn.size());
+
+                if (exportPdf) {
+                    logger.info("Generating PDF for filtered data...");
+                    generateInPdf(parcelsIn, response, fromDate, toDate, locCode);
+                    return ResponseEntity.ok().build();
+                }
+
+                if (exportExcel) {
+                    response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+                    response.setHeader("Content-Disposition", "attachment; filename=dispatch_history_" + type + ".xlsx");
+                    generateInExcel(parcelsIn, response, fromDate, toDate, locCode);
+                    return ResponseEntity.ok().build();
+                }
+
+           
+
+                return ResponseEntity.ok(parcelsIn);
+            } else if ("out".equalsIgnoreCase(type)) {
+
+                List<ParcelOutDto> parcelsOut = trnparceloutService.findByDateRangeAndLocCode(fromDate, toDate, locCode);
+                logger.info("Retrieved {} parcels before filtering.", parcelsOut.size());
+
+                if (senderLocCode != null) {
+                    logger.info("Applying filter: senderLocCode = {}", senderLocCode);
+                    parcelsOut = parcelsOut.stream()
+                            .filter(parcel -> senderLocCode.equalsIgnoreCase(parcel.getSenderLocCode()))
+                            .collect(Collectors.toList());
+                }
+
+                if (senderDepartment != null) {
+                    logger.info("Applying filter: senderDepartment = {}", senderDepartment);
+                    parcelsOut = parcelsOut.stream()
+                            .filter(parcel -> senderDepartment.equals(parcel.getSenderDepartment()))
+                            .collect(Collectors.toList());
+                }
+
+                if (searchBy != null && !searchBy.isBlank()) {
+                    logger.info("Applying filter: searchBy = {}", searchBy);
+
+                    String searchValue = searchBy.trim().toLowerCase();
+
+                    parcelsOut = parcelsOut.stream()
+                            .filter(parcel -> 
+                                    (parcel.getSenderDepartment() != null && parcel.getSenderDepartment().toLowerCase().contains(searchValue)) ||
+                                    (parcel.getSenderName() != null && parcel.getSenderName().toLowerCase().contains(searchValue)) ||
+                                    (parcel.getRecipientLocCode() != null && parcel.getRecipientLocCode().toLowerCase().contains(searchValue)) ||
+                                    (parcel.getRecipientDepartment() != null && parcel.getRecipientDepartment().toLowerCase().contains(searchValue)) ||
+                                    (parcel.getRecipientName() != null && parcel.getRecipientName().toLowerCase().contains(searchValue)) ||
+                                    (parcel.getConsignmentDate() != null && parcel.getConsignmentDate().toString().toLowerCase().contains(searchValue)) ||
+                                    (parcel.getConsignmentNumber() != null && parcel.getConsignmentNumber().toLowerCase().contains(searchValue)) ||
+                                    (parcel.getCourierName() != null && parcel.getCourierName().toLowerCase().contains(searchValue)) ||
+                                    (parcel.getWeight() != null && parcel.getWeight().toString().contains(searchValue)) ||
+                                    (parcel.getDistance() != null && parcel.getDistance().toString().contains(searchValue)) ||
+                                    (parcel.getCreatedDate() != null && parcel.getCreatedDate().toString().toLowerCase().contains(searchValue))
+                            )
+                            .collect(Collectors.toList());
+                }
+
+                if (sortBy != null && !sortBy.isBlank()) {
+                    logger.info("Applying sorting by field: {}", sortBy);
+
+                    parcelsOut.sort((p1, p2) -> {
+                        int comparisonResult = 0;
+
+                        // Sort only by senderLocCode
+                        if ("recipientLocCode".equals(sortBy) && p1.getRecipientLocCode() != null && p2.getRecipientLocCode() != null) {
+                            comparisonResult = "desc".equalsIgnoreCase(sortOrder)
+                                    ? p2.getRecipientLocCode().compareTo(p1.getRecipientLocCode())
+                                    : p1.getRecipientLocCode().compareTo(p2.getRecipientLocCode());
+                        }
+
+                        // Sort by senderDepartment within their respective locations
+                        else if ("recipientDepartment".equals(sortBy)) {
+                            // First, sort by senderLocCode (if not null)
+                            comparisonResult = (p1.getRecipientDepartment() != null && p2.getRecipientLocCode() != null)
+                                    ? p1.getRecipientLocCode().compareTo(p2.getRecipientLocCode())
+                                    : 0;
+
+                            // Then, if senderLocCode is equal, sort by senderDepartment
+                            if (comparisonResult == 0 && p1.getRecipientDepartment() != null && p2.getRecipientDepartment() != null) {
+                                comparisonResult = "desc".equalsIgnoreCase(sortOrder)
+                                        ? p2.getRecipientDepartment().compareTo(p1.getRecipientDepartment())
+                                        : p1.getRecipientDepartment().compareTo(p2.getRecipientDepartment());
+                            }
+                        }
+
+                        // Sort by senderName within their respective location and department
+                        else if ("recipientName".equals(sortBy)) {
+                            // First, group by location
+                            comparisonResult = (p1.getRecipientLocCode() != null && p2.getRecipientLocCode() != null)
+                                    ? p1.getRecipientLocCode().compareTo(p2.getRecipientLocCode())
+                                    : 0;
+
+                            // Then, group by department
+                            if (comparisonResult == 0 && p1.getRecipientDepartment() != null && p2.getRecipientDepartment() != null) {
+                                comparisonResult = p1.getRecipientDepartment().compareTo(p2.getRecipientDepartment());
+                            }
+
+                            // Finally, sort by name
+                            if (comparisonResult == 0 && p1.getRecipientName() != null && p2.getRecipientName() != null) {
+                                comparisonResult = "desc".equalsIgnoreCase(sortOrder)
+                                        ? p2.getRecipientName().compareTo(p1.getRecipientName())
+                                        : p1.getRecipientName().compareTo(p2.getRecipientName());
+                            }
+                        }
+
+                        return comparisonResult;
+                    });
+                }
+
+
+                parcelsOut.forEach(parcel -> logger.info("Filtered Parcel Data: {}", parcel));
+
+                if (exportPdf) {
+                    logger.info("Generating PDF for filtered data...");
+                    generateOutPdf(parcelsOut, response, fromDate, toDate, locCode);
+                    return ResponseEntity.ok().build();
+                }
+
+                if (exportExcel) {
+                    generateOutExcel(parcelsOut, response, fromDate, toDate, locCode);
+                    return ResponseEntity.ok().build();
+                }
+
+                return ResponseEntity.ok(parcelsOut);
+            } else {
                 logger.warn("Invalid parcel type received: {}", type);
                 return ResponseEntity.badRequest().body("Invalid parcel type. Must be 'in' or 'out'.");
             }
@@ -376,7 +758,6 @@ public class DispatchController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred: " + e.getMessage());
         }
     }
-
 
 
     private void generateInExcel(List<ParcelInDto> parcelsIn, HttpServletResponse response, LocalDate fromDate, LocalDate toDate, String locCode) throws IOException {
@@ -396,12 +777,12 @@ public class DispatchController {
 
             // Row 1: Title
             Row titleRow = sheet.createRow(0);
-            createMergedCell(sheet, titleRow, 0, 7, "Dispatch IN History ", titleStyle);
+            createMergedCell(sheet, titleRow, 0, 8, "Dispatch IN History ", titleStyle);
 
             // Row 2: Date Range
             Row dateRow = sheet.createRow(1);
             String dateRangeMessage = "From Date: " + fromDate.toString() + " To Date: " + toDate.toString();
-            createMergedCell(sheet, dateRow, 0, 7, dateRangeMessage, titleStyle);
+            createMergedCell(sheet, dateRow, 0, 8, dateRangeMessage, titleStyle);
             
             String locationname_with_code;
             if (locCode != null && !locCode.trim().isEmpty()) {
@@ -427,9 +808,10 @@ public class DispatchController {
             createCell(headerRow, 2, "Sender Name", headerStyle, sheet);
             createCell(headerRow, 3, "Recipient Department", headerStyle, sheet);
             createCell(headerRow, 4, "Recipient Name", headerStyle, sheet);
-            createCell(headerRow, 5, "Consignment DateTime", headerStyle, sheet);
-            createCell(headerRow, 6, "Consignment Number", headerStyle, sheet);
-            createCell(headerRow, 7, "Created Date", headerStyle, sheet);
+            createCell(headerRow, 5, "Courier Name", headerStyle, sheet);
+            createCell(headerRow, 6, "Consignment DateTime", headerStyle, sheet);
+            createCell(headerRow, 7, "Consignment Number", headerStyle, sheet);
+            createCell(headerRow, 8, "Created Date", headerStyle, sheet);
 
             // Write data rows
             int rowIdx = 4;
@@ -440,13 +822,14 @@ public class DispatchController {
                 createCell(dataRow, 2, parcel.getSenderName(), dataStyle, sheet);
                 createCell(dataRow, 3, parcel.getRecipientDepartment(), dataStyle, sheet);
                 createCell(dataRow, 4, parcel.getRecipientName(), dataStyle, sheet);
-                createCell(dataRow, 5, parcel.getConsignmentDate() != null ? parcel.getConsignmentDate().toString() : "", dataStyle, sheet);
-                createCell(dataRow, 6, parcel.getConsignmentNumber(), dataStyle, sheet);
-                createCell(dataRow, 7, parcel.getCreatedDate() != null ? parcel.getCreatedDate().toString() : "", dataStyle, sheet);
+                createCell(dataRow, 5, parcel.getCourierName(), dataStyle, sheet);
+                createCell(dataRow, 6, parcel.getConsignmentDate() != null ? parcel.getConsignmentDate().toString() : "", dataStyle, sheet);
+                createCell(dataRow, 7, parcel.getConsignmentNumber(), dataStyle, sheet);
+                createCell(dataRow, 8, parcel.getCreatedDate() != null ? parcel.getCreatedDate().toString() : "", dataStyle, sheet);
             }
 
             // Auto-size columns after writing all data
-            for (int i = 0; i < 8; i++) {
+            for (int i = 0; i < 10; i++) {
                 sheet.autoSizeColumn(i);
             }
 

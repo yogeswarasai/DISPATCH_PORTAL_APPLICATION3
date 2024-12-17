@@ -95,6 +95,11 @@ public interface TrnParcelOutRepository extends JpaRepository<TrnParcelOut, TrnP
 
 //		@Query("SELECT t.distance FROM TrnParcelOut t WHERE LOWER(t.senderLocCode) = LOWER(:senderLocCode) AND LOWER(t.recipientLocCode) = LOWER(:recipientLocCode)")
 //		Double findDistanceBySenderAndRecipientNative(@Param("senderLocCode") String senderLocCode, @Param("recipientLocCode") String recipientLocCode);
+		
+		@Query("SELECT t FROM TrnParcelOut t WHERE t.senderLocCode = :senderLocCode AND t.recipientLocCode = :recipientLocCode ORDER BY t.createdDate ASC")
+		List<TrnParcelOut> findAllDistances(@Param("senderLocCode") String senderLocCode, @Param("recipientLocCode") String recipientLocCode);
+
+
 
 }
   

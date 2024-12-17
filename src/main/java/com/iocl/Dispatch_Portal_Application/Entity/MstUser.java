@@ -54,7 +54,10 @@ public class MstUser {
     private LocalDate createdDate;
     
     @Column(name = "last_updated_date")
-    private LocalDateTime lastUpdatedDate;   
+    private LocalDateTime lastUpdatedDate;  
+    
+    @Column(name = "password", length = 50)
+    private String password;
     
 //    @ManyToMany
 //    @JoinTable(

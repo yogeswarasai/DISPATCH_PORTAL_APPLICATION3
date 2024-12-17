@@ -7,6 +7,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.iocl.Dispatch_Portal_Application.DTO.MstUserDTO;
 import com.iocl.Dispatch_Portal_Application.Entity.MstUser;
+import com.iocl.Dispatch_Portal_Application.Repositaries.MstUserRepository;
 import com.iocl.Dispatch_Portal_Application.Security.JwtUtils;
 import com.iocl.Dispatch_Portal_Application.ServiceLayer.EmployeeService;
 import com.iocl.Dispatch_Portal_Application.ServiceLayer.MstUserService;
@@ -31,6 +33,8 @@ public class MstUserController {
 	 @Autowired
 	    private MstUserService mstUserService;
 	 
+	 @Autowired
+	 private MstUserRepository mstUserRepository;
 	 @Autowired
 	    private  EmployeeService employeeService;
 	 
@@ -72,6 +76,13 @@ public class MstUserController {
 
 	        // Return the response
 	        return ResponseEntity.ok(dispatchUsers);
+	    }
+
+	    
+	    @GetMapping("/check-mobile")
+	    public ResponseEntity<Boolean> checkMobileNumberExists(@RequestParam Long mobileNumber) {
+	        boolean exists = mstUserRepository.existsByMobileNumber(mobileNumber);
+	        return ResponseEntity.ok(exists);
 	    }
 
 
